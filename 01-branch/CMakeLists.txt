@@ -1,5 +1,7 @@
 # create an executable
-ADD_EXECUTABLE (01-branch main.cpp)
+ADD_EXECUTABLE (01-branch 
+	${COMMON_SOURCE}
+	main.cpp)
 
 # and link the library against the executable
 TARGET_LINK_LIBRARIES (01-branch ${COMMON_LIBRARIES})

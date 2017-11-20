@@ -4,11 +4,12 @@ project (TREE_SIM)
 SET(CMAKE_CXX_FLAGS "-std=c++11 -I/usr/include -I/usr/local/include")
 
 # set common source
-# set (COMMON_SOURCE
-# 	# ${PROJECT_SOURCE_DIR}/src/timer/LoopTimer.h
-# 	# ${PROJECT_SOURCE_DIR}/src/force_sensor/ForceSensorSim.h
-# 	# ${PROJECT_SOURCE_DIR}/src/force_sensor/ForceSensorDisplay.h
-# 	)
+set (COMMON_SOURCE
+	${PROJECT_SOURCE_DIR}/src/QuadraticSplineVisual.cpp
+	# ${PROJECT_SOURCE_DIR}/src/timer/LoopTimer.h
+	# ${PROJECT_SOURCE_DIR}/src/force_sensor/ForceSensorSim.h
+	# ${PROJECT_SOURCE_DIR}/src/force_sensor/ForceSensorDisplay.h
+	)
 include_directories(${PROJECT_SOURCE_DIR}/src)
 
 # # set common dependencies
