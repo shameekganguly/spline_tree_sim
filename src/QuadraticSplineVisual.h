@@ -3,6 +3,7 @@
 #ifndef QUADRATIC_SPLINE_VISUAL_H
 #define QUADRATIC_SPLINE_VISUAL_H
 
+#include "QuadraticSplineKinematic.h"
 #include <Eigen/Core>
 #include <chai3d.h>
 
@@ -15,7 +16,7 @@ class QuadraticSplineVisual: public chai3d::cGenericObject {
 // public member functions
 public:
 	// ctor
-	QuadraticSplineVisual();
+	QuadraticSplineVisual(QuadraticSplineKinematic* spline_kinematic);
 
 	// dtor
 	virtual ~QuadraticSplineVisual();
@@ -23,34 +24,20 @@ public:
 // protected member functions
 protected:
 	// render: from parent class
-	void render(chai3d::cRenderOptions& a_options);
+	virtual void render(chai3d::cRenderOptions& a_options);
+
+// private internal functions
+private:
 
 // data members
 // TODO: need to make these protected and add access and write functions, since
 // we need to have these parameters be in bounded ranges.
 public:
-	/* ---- Kinematic info ----*/
-	// radius of the element
-	double _radius;
-
-	// length of the element
-	double _length;
-
-	// alpha angle of the element
-	double _alpha;
-
-	// beta angle of the element
-	double _beta;
-
-	/* ---- Graphic info ----*/
-protected:
-	// spacing between vertex sets on plane cross sections along the length of the spline
-	double _ds_longitudinal;
-
-	// subtended angle between vertices in a single plane cross section
-	double _ds_angle;
+	// ptr to kinematic info
+	QuadraticSplineKinematic* _kinematic;
 
 public:
+	/* ---- Graphic info ----*/
 	// number of vertices in a single plane cross section
 	uint _nv_plane;
 

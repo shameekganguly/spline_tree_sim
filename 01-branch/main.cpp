@@ -2,11 +2,15 @@
 
 #include <Sai2Graphics.h>
 #include <GLFW/glfw3.h> //must be loaded after loading opengl/glew
+#include "QuadraticSplineKinematic.h"
+#include "QuadraticSplineVisual.h"
 
+#include <Eigen/Core>
 #include <iostream>
 #include <string>
 
 using namespace std;
+using namespace Eigen;
 
 const string world_file = "resources/01-branch/world.urdf";
 const string camera_name = "camera_isometric";
@@ -31,9 +35,23 @@ int main(int argc, char** argv) {
 	cout << "Loading URDF world model file: " << world_file << endl;
 
 	// load graphics scene
-	auto graphics = new Sai2Graphics::Sai2Graphics(world_file, true);
-	Eigen::Vector3d camera_pos, camera_lookat, camera_vertical;
+	auto graphics = new Sai2Graphics::Sai2Graphics(world_file, false);
+	Vector3d camera_pos, camera_lookat, camera_vertical;
 	graphics->getCameraPose(camera_name, camera_pos, camera_vertical, camera_lookat);
+
+	// create the kinematic spline element
+	// TODO: store the transform from the world frame to the local frame of
+	// this spline
+	auto spline = new QuadraticSplineKinematic();
+	spline->_length = 1.0;
+	spline->_radius = 0.09;
+	spline->_alpha = M_PI/10.0;
+	spline->_beta = M_PI/10.0;
+
+	// create the spline element to display
+	auto spline_graphic = new QuadraticSplineVisual(spline);
+	graphics->_world->addChild(spline_graphic);
+	spline_graphic->setLocalPos(Vector3d(0.0, 0.0, 1.0));
 
 	/*------- Set up visualization -------*/
     // set up error callback
