@@ -44,14 +44,25 @@ int main(int argc, char** argv) {
 	// this spline
 	auto spline = new QuadraticSplineKinematic();
 	spline->_length = 1.0;
-	spline->_radius = 0.09;
-	spline->_alpha = M_PI/10.0;
-	spline->_beta = M_PI/10.0;
+	spline->_radius = 0.04;
+	spline->_alpha = 0.00001;
+	spline->_beta = 0.00001;
 
 	// create the spline element to display
 	auto spline_graphic = new QuadraticSplineVisual(spline);
 	graphics->_world->addChild(spline_graphic);
-	spline_graphic->setLocalPos(Vector3d(0.0, 0.0, 1.0));
+	spline_graphic->setLocalPos(Vector3d(-0.25, 0.0, 1.5));
+	spline_graphic->m_material->setColorf(0.3, 0.15, 0.1);
+	spline_graphic->m_material->setShininess(100);
+	spline_graphic->_nv_longitudinal = 50;
+
+	// create the cherry
+	double r0 = spline->_radius;
+	double s_cherry = spline->_length;
+	auto cherry = new chai3d::cShapeSphere(r0);
+	spline_graphic->addChild(cherry);
+	cherry->m_material->setBrownMaroon();
+	cherry->m_material->setShininess(100);
 
 	/*------- Set up visualization -------*/
     // set up error callback
@@ -91,13 +102,56 @@ int main(int argc, char** argv) {
 	Eigen::Matrix3d R;
 	Eigen::Vector3d center_point = Eigen::Vector3d::Zero();
 
+	// cherry position
+	Vector3d cherry_pos_local;
+
+	// spline dynamics variables
+	double ks = 0.15;
+	double b = 0.05;
+	double dt = 0.01;
+	double cherry_r = r0;
+	double cherry_r_max = 0.25;
+	const double cherry_growth_rate = 0.02; // r/ sec
+	MatrixXd Jv_s;
+	MatrixXd Jlp;
+	VectorXd dq(2);
+	Vector3d F_cherry;
+	VectorXd gamma_cherry;
+	const double density_cherry = 0.15;
+
 	// while window is open:
     while (!glfwWindowShouldClose(window))
 	{
 		// update graphics. this automatically waits for the correct amount of time
 		int width, height;
 		glfwGetFramebufferSize(window, &width, &height);
+		
+		/* --- SPLINE KINEMATICS UPDATES BEG --- */
+		spline->splineLocation(cherry_pos_local, s_cherry);
+		cherry->setLocalPos(cherry_pos_local);
+
+		if (cherry_r < cherry_r_max) {
+			cherry_r += cherry_growth_rate*dt;
+		}
+		cherry->setRadius(cherry_r);
+		/* --- SPLINE KINEMATICS UPDATES END --- */
+
 		graphics->render(camera_name, width, height);
+
+
+		/* --- SPLINE DYNAMICS BEG ---*/
+		spline->splineLinearJacobian(Jv_s, s_cherry);
+		F_cherry.setZero();
+		F_cherry[2] = -9.8*density_cherry*4.0/3.0*M_PI*pow(cherry_r,3);
+		gamma_cherry = Jv_s.transpose()*F_cherry;
+
+		spline->splineTipProjectionLengthJacobian(Jlp);
+		dq[0] = -Jlp(0,0)*ks/b*spline->splineTipProjectionLength() + gamma_cherry[0]/b;
+		dq[1] = -Jlp(0,1)*ks/b*spline->splineTipProjectionLength() + gamma_cherry[1]/b;
+		spline->_alpha += dq[0]*dt;
+		spline->_beta += dq[1]*dt;
+		
+		/* --- SPLINE DYNAMICS END ---*/
 
 		// swap buffers
 		glfwSwapBuffers(window);

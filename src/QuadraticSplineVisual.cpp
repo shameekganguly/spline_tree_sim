@@ -64,7 +64,7 @@ void QuadraticSplineVisual::render(cRenderOptions& a_options)
             m_displayList.begin(m_useDisplayList);
 
             // compute spacing parameters
-            double _ds_longitudinal = _kinematic->_length/_nv_longitudinal;
+            double _ds_longitudinal = _kinematic->_length/(_nv_longitudinal-1);
 			double _ds_angle = 2.0*M_PI/_nv_plane;
 
             Vector3d point1, point2, point3, point4;

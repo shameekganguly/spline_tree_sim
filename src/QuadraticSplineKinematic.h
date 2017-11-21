@@ -24,6 +24,9 @@ public:
 	// compute orientation on spline
 	virtual void splineOrientation(Eigen::Matrix3d& ret_matrix, double s) const;
 
+	// compute the spline projection length
+	virtual double splineTipProjectionLength() const;
+
 	// compute linear jacobian of point on spline
 	virtual void splineLinearJacobian(Eigen::MatrixXd& ret_matrix, double s) const;
 

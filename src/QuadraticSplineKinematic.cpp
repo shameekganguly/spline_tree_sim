@@ -51,6 +51,11 @@ void QuadraticSplineKinematic::deformedLocation(Eigen::Vector3d& ret_vector, dou
 	ret_vector += spline_rot*local_frame_pos;
 }
 
+// compute the spline projection length
+double QuadraticSplineKinematic::splineTipProjectionLength() const {
+	return _length*gam()/2.0*pow(sinc(gam()/2.0) ,2);
+}
+
 // compute linear jacobian of point on spline
 void QuadraticSplineKinematic::splineLinearJacobian(Eigen::MatrixXd& ret_matrix, double s) const {
 	if(s < 0 || s > _length) { throw(std::runtime_error("splineOrientation: Passed value of s is out of bounds.")); }
