@@ -59,6 +59,7 @@ int main(int argc, char** argv) {
 	auto graphics = new Sai2Graphics::Sai2Graphics(world_file, false);
 	Vector3d camera_pos, camera_lookat, camera_vertical;
 	graphics->getCameraPose(camera_name, camera_pos, camera_vertical, camera_lookat);
+	graphics->_world->setBackgroundColor(0.3, 0.5, 0.7);
 
 	// create the kinematic spline element
 	// TODO: store the transform from the world frame to the local frame of
@@ -169,6 +170,7 @@ int main(int argc, char** argv) {
 		glfwGetFramebufferSize(window, &width, &height);
 
 		// render scene
+		graphics->_world->updateShadowMaps(false);
 		graphics->render(camera_name, width, height);
 
 		// compute global position of spline and cherry
@@ -288,7 +290,7 @@ void updateHaptics(
 
 	// haptics device
 	cVector3d position;
-	const double scale_factor = 100.0;
+	const double scale_factor = 80.0;
 	Vector3d home_pos(-0.25, 0.0, 1.5);
 	Vector3d F_haptic;
 	double last_distance;
@@ -329,7 +331,7 @@ void updateHaptics(
 	        if (fHapticSwitchPressed) {
 	        	// ignore if the cursor is too far
 	        	if (
-	        		(cursor->getLocalPos().eigen() - cherry->getGlobalPos().eigen()).norm() > (cherry->getRadius()*1.5 + cursor->getRadius())
+	        		(cursor->getLocalPos().eigen() - cherry->getGlobalPos().eigen()).norm() > (cherry->getRadius()*1.0 + cursor->getRadius())
 	        		&& !haptic_force_line->getShowEnabled()
         		) {
 	        		fHapticSwitchPressed = false;
@@ -374,6 +376,11 @@ void updateHaptics(
 				cherry_acc += 1.0/(density_cherry*4.0/3.0*M_PI*pow(cherry_r,3))*F_haptic;
 				cherry_vel += cherry_acc*0.01;
 				cherry_pos_global += cherry_vel*0.01;
+				// clamp to ground
+				double cherry_min_height_ground = 0.0;
+				if (cherry_pos_global[2] < cherry_min_height_ground) {
+					cherry_pos_global[2] = cherry_min_height_ground;
+				}
 				cherry->setLocalPos(cherry_pos_global);
 			}
 		}
