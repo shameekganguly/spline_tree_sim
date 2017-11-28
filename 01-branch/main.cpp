@@ -72,7 +72,15 @@ int main(int argc, char** argv) {
 	// create the spline element to display
 	auto spline_graphic = new QuadraticSplineVisual(spline);
 	graphics->_world->addChild(spline_graphic);
-	spline_graphic->setLocalPos(Vector3d(-0.25, 0.0, 1.5));
+	spline_graphic->setLocalPos(Vector3d(-0.28, 0.05, 1.4));
+	Matrix3d spline_rot1, spline_rot2;
+	spline_rot1 << 0.707, -0.707, 0.0,
+				0.707, 0.707, 0.0,
+					0.0, 0.0, 1.0;
+	spline_rot2 << 0.866, 0.0, 0.5,
+					0.0, 1.0, 0.0,
+					-0.5, 0.0, 0.866;
+	spline_graphic->setLocalRot(spline_rot1*spline_rot2);
 	spline_graphic->m_material->setColorf(0.3, 0.15, 0.1);
 	spline_graphic->m_material->setShininess(100);
 	spline_graphic->_nv_longitudinal = 50;
