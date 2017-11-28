@@ -259,20 +259,20 @@ def Ryz_dbeta(s, alp, beta):
 def Rzy_dbeta(s, alp, beta):
 	return Ryz_dbeta(s, alp, beta)
 
-def lp_alpha(alp, beta):
+def lp_alpha(s, alp, beta):
 	l = 1.0
 	psi = np.arcsin(np.cos(alp)*np.cos(beta))
 	gam = np.pi - 2.0*psi
-	ret_val = l/2.0*((sinc(gam/2.0)**2) + gam*sinc(gam/2.0)*dsinc(gam/2.0))*dgam_dalp(psi, alp, beta)
-	ret_val *= l/2.0*gam*(sinc(gam/2.0)**2)
+	ret_val = s*s/2.0/l*((sinc(s*gam/2.0/l)**2) + s*gam/l*sinc(s*gam/2.0/l)*dsinc(s*gam/2.0/l))*dgam_dalp(psi, alp, beta)
+	ret_val *= s*s/2.0/l*gam*(sinc(s*gam/2.0/l)**2)
 	return ret_val
 
-def lp_beta(alp, beta):
+def lp_beta(s, alp, beta):
 	l = 1.0
 	psi = np.arcsin(np.cos(alp)*np.cos(beta))
 	gam = np.pi - 2.0*psi
-	ret_val = l/2.0*((sinc(gam/2.0)**2) + gam*sinc(gam/2.0)*dsinc(gam/2.0))*dgam_dbeta(psi, alp, beta)
-	ret_val *= l/2.0*gam*(sinc(gam/2.0)**2)
+	ret_val = s*s/2.0/l*((sinc(s*gam/2.0/l)**2) + s*gam/l*sinc(s*gam/2.0/l)*dsinc(s*gam/2.0/l))*dgam_dbeta(psi, alp, beta)
+	ret_val *= s*s/2.0/l*gam*(sinc(s*gam/2.0/l)**2)
 	return ret_val
 
 # test
@@ -281,13 +281,12 @@ def lp_beta(alp, beta):
 # s = 0.732
 # print Jv_s(s, alp, beta)
 
-alp = np.linspace(-np.pi/3, np.pi/3, 20)
-beta = np.linspace(-np.pi/3, np.pi/3, 20)
+alp = np.linspace(-np.pi*2.0/3.0, np.pi*2.0/3.0, 20)
+beta = np.linspace(-np.pi*2.0/3.0, np.pi*2.0/3.0, 20)
 grad = np.zeros((20,20))
 for i in range(20):
 	for j in range(20):
-		grad[i,j] = Rxz_dalpha(0.732, alp[i], beta[j])
-		# grad[i,j] = lp_beta(alp[i], beta[j])
+		grad[i,j] = lp_beta(0.5, alp[i], beta[j])
 
 plt.imshow(grad, cmap='hot', interpolation='nearest')
 plt.colorbar()

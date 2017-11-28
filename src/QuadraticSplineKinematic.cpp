@@ -53,7 +53,12 @@ void QuadraticSplineKinematic::deformedLocation(Eigen::Vector3d& ret_vector, dou
 
 // compute the spline projection length
 double QuadraticSplineKinematic::splineTipProjectionLength() const {
-	return _length*gam()/2.0*pow(sinc(gam()/2.0) ,2);
+	return splineProjectionLength(_length);
+}
+
+// compute the projection length at a given point along the spline
+double QuadraticSplineKinematic::splineProjectionLength(double s) const {
+	return s*s*gam()/(2.0*_length)*pow(sinc(s*gam()/2.0/_length) ,2);
 }
 
 // compute linear jacobian of point on spline
@@ -101,6 +106,12 @@ void QuadraticSplineKinematic::splineLinearJacobian(Eigen::MatrixXd& ret_matrix,
 // compute jacobian of spline projection length, for spring force
 // computations
 void QuadraticSplineKinematic::splineTipProjectionLengthJacobian(Eigen::MatrixXd& ret_matrix) const {
+	splineProjectionLengthJacobian(ret_matrix, _length);
+}
+
+// compute jacobian of the projection length at a given point along the spline, for spring force
+// computations
+void QuadraticSplineKinematic::splineProjectionLengthJacobian(Eigen::MatrixXd& ret_matrix, double s) const {
 	// reshape to 1 x 2
 	ret_matrix.setZero(1,2);
 
@@ -108,13 +119,13 @@ void QuadraticSplineKinematic::splineTipProjectionLengthJacobian(Eigen::MatrixXd
 	double g = gam();
 	double dg_dalp = dgam_dalp();
 	double dg_dbeta = dgam_dbeta();
-	double sinc2 = pow(sinc(g/2.0), 2);
-	double gam_bracket = sinc2 + g*sinc(g/2.0)*dsinc(g/2.0);
+	double sinc2 = pow(sinc(s*g/(2.0*_length)), 2);
+	double gam_bracket = sinc2 + s*g/_length*sinc(s*g/(2.0*_length))*dsinc(s*g/(2.0*_length));
 
 	// lp_dalp
-	ret_matrix(0,0) = _length/2.0*gam_bracket*dg_dalp;
+	ret_matrix(0,0) = s*s*g/(2.0*_length)*gam_bracket*dg_dalp;
 	// lp_dbeta
-	ret_matrix(0,1) = _length/2.0*gam_bracket*dg_dbeta;
+	ret_matrix(0,1) = s*s*g/(2.0*_length)*gam_bracket*dg_dbeta;
 }
 
 // internal: compute position on spline

@@ -27,12 +27,19 @@ public:
 	// compute the spline projection length
 	virtual double splineTipProjectionLength() const;
 
+	// compute the projection length at a given point along the spline
+	virtual double splineProjectionLength(double s) const;
+
 	// compute linear jacobian of point on spline
 	virtual void splineLinearJacobian(Eigen::MatrixXd& ret_matrix, double s) const;
 
 	// compute jacobian of spline projection length, for spring force
 	// computations
 	virtual void splineTipProjectionLengthJacobian(Eigen::MatrixXd& ret_matrix) const;
+
+	// compute jacobian of the projection length at a given point along the spline, for spring force
+	// computations
+	virtual void splineProjectionLengthJacobian(Eigen::MatrixXd& ret_matrix, double s) const;
 
 // protected member functions
 protected:

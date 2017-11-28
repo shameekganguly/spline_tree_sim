@@ -272,15 +272,15 @@ void updateHaptics(
 	// cherry updates
 	Vector3d cherry_pos_local, cherry_pos_global;
 	bool cherry_still_on_plant = true;
-	const double cherry_pluck_force_thresh = 1.0;
+	const double cherry_pluck_force_thresh = 1.5;
 	Vector3d cherry_vel, cherry_acc, cherry_force;
 
 	// spline dynamics variables
-	double ks = 0.75;
+	double ks = 10.0;
 	double b = 0.05;
 	double cherry_r = cherry->getRadius();
 	double cherry_r_max = 0.15;
-	const double cherry_growth_rate = 0.03; // r/ sec
+	const double cherry_growth_rate = 0.007; // r/ sec
 	MatrixXd Jv_s;
 	MatrixXd Jlp;
 	VectorXd dq(2);
@@ -396,9 +396,9 @@ void updateHaptics(
 		}
 		gamma_cherry = Jv_s.transpose()*F_cherry;
 
-		spline->splineTipProjectionLengthJacobian(Jlp);
-		dq[0] = -Jlp(0,0)*ks/b*spline->splineTipProjectionLength() + gamma_cherry[0]/b;
-		dq[1] = -Jlp(0,1)*ks/b*spline->splineTipProjectionLength() + gamma_cherry[1]/b;
+		spline->splineProjectionLengthJacobian(Jlp, 0.5);
+		dq[0] = -Jlp(0,0)*ks/b*spline->splineProjectionLength(0.5) + gamma_cherry[0]/b;
+		dq[1] = -Jlp(0,1)*ks/b*spline->splineProjectionLength(0.5) + gamma_cherry[1]/b;
 		spline->_alpha += dq[0]*loop_dt;
 		spline->_beta += dq[1]*loop_dt;
 
