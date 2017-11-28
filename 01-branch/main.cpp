@@ -267,11 +267,10 @@ void updateHaptics(
 
 	// spline dynamics variables
 	double ks = 0.75;
-	double b = 0.1;
-	double dt = 0.01;
+	double b = 0.05;
 	double cherry_r = cherry->getRadius();
-	double cherry_r_max = 0.25;
-	const double cherry_growth_rate = 0.007; // r/ sec
+	double cherry_r_max = 0.15;
+	const double cherry_growth_rate = 0.03; // r/ sec
 	MatrixXd Jv_s;
 	MatrixXd Jlp;
 	VectorXd dq(2);
@@ -286,9 +285,8 @@ void updateHaptics(
 	Vector3d F_haptic;
 	double last_distance;
 	Vector3d last_dir;
-	const double haptic_kp = 0.6;
+	const double haptic_kp = 1.5;
 	const double haptic_force_scale = 9.0;
-	const double haptic_kv = 0.01;
 
 	// start simulation loop
 	fSimulationRunning = true;
@@ -305,7 +303,7 @@ void updateHaptics(
 			cherry->setLocalPos(cherry_pos_local);
 
 			if (cherry_r < cherry_r_max) {
-				cherry_r += cherry_growth_rate*dt;
+				cherry_r += cherry_growth_rate*loop_dt;
 			}
 			cherry->setRadius(cherry_r);
 		}
@@ -316,12 +314,14 @@ void updateHaptics(
 	        hapticDevice->getPosition(position);
 	        cursor->setLocalPos(position*scale_factor + home_pos);
 
-	        hapticDevice->getUserSwitch(0, fHapticSwitchPressed);
+	        if (cherry_still_on_plant || fHapticSwitchPressed) {
+		        hapticDevice->getUserSwitch(0, fHapticSwitchPressed);
+	        }
 
 	        if (fHapticSwitchPressed) {
 	        	// ignore if the cursor is too far
 	        	if (
-	        		(cursor->getLocalPos().eigen() - cherry->getGlobalPos().eigen()).norm() > (cherry->getRadius()*2.0 + cursor->getRadius())
+	        		(cursor->getLocalPos().eigen() - cherry->getGlobalPos().eigen()).norm() > (cherry->getRadius()*1.5 + cursor->getRadius())
 	        		&& !haptic_force_line->getShowEnabled()
         		) {
 	        		fHapticSwitchPressed = false;
@@ -331,21 +331,12 @@ void updateHaptics(
 		        	haptic_force_line->setShowEnabled(true);
 
 		        	// compute forces
-		        	double distance = (haptic_force_line->m_pointB - haptic_force_line->m_pointA).eigen().norm();
-		        	if (distance > 1e-2) {
-		        		Vector3d dir = (haptic_force_line->m_pointB - haptic_force_line->m_pointA).eigen().normalized();
-			        	F_haptic = haptic_kp * dir * distance;
-			        	if (!cherry_still_on_plant) {
-			        		F_haptic -= haptic_kv * (distance - last_distance)/dt * dir;
-			        	}
-			        	last_dir = dir;
+		        	if (cherry_still_on_plant) {
+		        		F_haptic = haptic_kp * (haptic_force_line->m_pointB - haptic_force_line->m_pointA).eigen();
 		        	} else {
 		        		F_haptic.setZero();
-		        		if (!cherry_still_on_plant) {
-			        		F_haptic -= haptic_kv * (distance - last_distance)/dt * last_dir;
-			        	}
+		        		F_haptic[2] = -9.8*density_cherry*4.0/3.0*M_PI*pow(cherry_r,3);
 		        	}
-		        	last_distance = distance;
 	        	}
 			}
 			if (!fHapticSwitchPressed) {
@@ -360,20 +351,23 @@ void updateHaptics(
 			cherry_pos_global = cherry->getGlobalPos().eigen();
 			spline_graphic->removeChild(cherry);
 			graphics->_world->addChild(cherry);
-			cherry->setLocalPos(cherry_pos_global);
 			// set flag
 			cherry_still_on_plant = false;
-			cherry_vel.setZero();
 		}
 
 		if (!cherry_still_on_plant) {
-			cherry_pos_global = cherry->getGlobalPos().eigen();
-			cherry_acc.setZero();
-			cherry_acc[2] -= 9.8;
-			cherry_acc += 1.0/(density_cherry*4.0/3.0*M_PI*pow(cherry_r,3))*F_haptic;
-			cherry_vel += cherry_acc*0.01;
-			cherry_pos_global += cherry_vel*0.01;
-			cherry->setLocalPos(cherry_pos_global);
+			if (fHapticSwitchPressed) {
+				cherry->setLocalPos(cursor->getLocalPos());
+				cherry_vel.setZero();
+			} else {
+				cherry_pos_global = cherry->getGlobalPos().eigen();
+				cherry_acc.setZero();
+				cherry_acc[2] -= 9.8;
+				cherry_acc += 1.0/(density_cherry*4.0/3.0*M_PI*pow(cherry_r,3))*F_haptic;
+				cherry_vel += cherry_acc*0.01;
+				cherry_pos_global += cherry_vel*0.01;
+				cherry->setLocalPos(cherry_pos_global);
+			}
 		}
 
 		/* --- CHERRY DYNAMICS END ---*/
@@ -390,8 +384,8 @@ void updateHaptics(
 		spline->splineTipProjectionLengthJacobian(Jlp);
 		dq[0] = -Jlp(0,0)*ks/b*spline->splineTipProjectionLength() + gamma_cherry[0]/b;
 		dq[1] = -Jlp(0,1)*ks/b*spline->splineTipProjectionLength() + gamma_cherry[1]/b;
-		spline->_alpha += dq[0]*dt;
-		spline->_beta += dq[1]*dt;
+		spline->_alpha += dq[0]*loop_dt;
+		spline->_beta += dq[1]*loop_dt;
 
 		if (fHapticDeviceEnabled) {
 			// apply haptics forces
