@@ -56,7 +56,7 @@
 	</light>
 
 	<light name="light_spot" type="spot">
-		<position xyz="0.5 -1.0 6.0" />
+		<position xyz="3.5 -1.0 6.0" />
 		<lookat xyz="0.0 0.0 0.0" />
 	</light>
 
