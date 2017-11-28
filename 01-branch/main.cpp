@@ -335,7 +335,7 @@ void updateHaptics(
 		        		F_haptic = haptic_kp * (haptic_force_line->m_pointB - haptic_force_line->m_pointA).eigen();
 		        	} else {
 		        		F_haptic.setZero();
-		        		F_haptic[2] = -9.8*density_cherry*4.0/3.0*M_PI*pow(cherry_r,3);
+		        		F_haptic[2] = 9.8*density_cherry*4.0/3.0*M_PI*pow(cherry_r,3);
 		        	}
 	        	}
 			}
