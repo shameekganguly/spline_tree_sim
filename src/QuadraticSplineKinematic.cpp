@@ -13,8 +13,8 @@ QuadraticSplineKinematic::QuadraticSplineKinematic()
 	// default values
 	_radius = 0.04;
 	_length = 1.0;
-	_alpha = 0.0;
-	_beta = 0.0;
+	_alpha = 0.00001;
+	_beta = 0.00001;
 }
 
 // dtor
@@ -25,23 +25,23 @@ QuadraticSplineKinematic::~QuadraticSplineKinematic() {
 // compute position on spline
 void QuadraticSplineKinematic::splineLocation(Eigen::Vector3d& ret_vector, double s) const {
 	// check for correct ranges
-	if(s < 0 || s > _length) { throw(std::runtime_error("splineLocation: Passed value of s is out of bounds.")); }
+	if(s < (0 - 1e-10) || s > (_length+1e-10)) { throw(std::runtime_error("splineLocation: Passed value of s is out of bounds.")); }
 	_splineLocation(ret_vector, s);
 }
 
 // compute orientation on spline
 void QuadraticSplineKinematic::splineOrientation(Eigen::Matrix3d& ret_matrix, double s) const {
 	// check for correct ranges
-	if(s < 0 || s > _length) { throw(std::runtime_error("splineOrientation: Passed value of s is out of bounds.")); }
+	if(s < (0 - 1e-10) || s > (_length+1e-10)) { throw(std::runtime_error("splineOrientation: Passed value of s is out of bounds.")); }
 	_splineOrientation(ret_matrix, s);
 }
 
 // get the local position of a point given the deformation coordinates
 void QuadraticSplineKinematic::deformedLocation(Eigen::Vector3d& ret_vector, double s, double t, double eta) const {
 	// check for correct ranges
-	if(s < 0 || s > _length) { throw(std::runtime_error("splineOrientation: Passed value of s is out of bounds.")); }
-	if(t < 0 || t > _radius) { throw(std::runtime_error("deformedLocation: Passed value of t is out of bounds.")); }
-	if(eta < 0 || eta > 2.0*M_PI) { throw(std::runtime_error("deformedLocation: Passed value of eta is out of bounds.")); }
+	if(s < (0 - 1e-10) || s > (_length+1e-10)) { throw(std::runtime_error("splineOrientation: Passed value of s is out of bounds.")); }
+	if(t < (0 - 1e-10) || t > (_radius+1e-10)) { throw(std::runtime_error("deformedLocation: Passed value of t is out of bounds.")); }
+	if(eta < (0 - 1e-10) || eta > (2.0*M_PI+1e-10)) { throw(std::runtime_error("deformedLocation: Passed value of eta is out of bounds.")); }
 
 	// compute the frame position on the spline.
 	_splineLocation(ret_vector, s);
@@ -63,7 +63,7 @@ double QuadraticSplineKinematic::splineProjectionLength(double s) const {
 
 // compute linear jacobian of point on spline
 void QuadraticSplineKinematic::splineLinearJacobian(Eigen::MatrixXd& ret_matrix, double s) const {
-	if(s < 0 || s > _length) { throw(std::runtime_error("splineOrientation: Passed value of s is out of bounds.")); }
+	if(s < (0 - 1e-10) || s > (_length+1e-10)) { throw(std::runtime_error("splineOrientation: Passed value of s is out of bounds.")); }
 
 	// reshape to 3 x 2
 	ret_matrix.setZero(3,2);
