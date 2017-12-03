@@ -24,10 +24,7 @@ BranchKinematic* TreeKinematic::branchIs(const std::string& name, const std::str
 	// check if parent exists.
 	auto it_b = _branches.find(parent_name);
 	if (it_b == _branches.end()) {
-		// is parent trunk?
-		if (parent_name.compare(trunk()) != 0) {
-			throw(std::runtime_error("Parent branch does not exist."));
-		}
+		throw(std::runtime_error("Parent branch does not exist."));
 	}
 
 	// check name conflict with trunk
@@ -106,10 +103,7 @@ Fruit* TreeKinematic::fruitIs(const std::string& name, const std::string& branch
 	// check if parent branch exists.
 	auto it_p = _branches.find(branch_name);
 	if (it_p == _branches.end()) {
-		// is parent trunk?
-		if (branch_name.compare(trunk()) != 0) {
-			throw(std::runtime_error("Parent branch does not exist."));
-		}
+		throw(std::runtime_error("Parent branch does not exist."));
 	}
 
 	// else add fruit

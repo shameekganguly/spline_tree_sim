@@ -20,7 +20,7 @@ class TreeKinematic {
 public:
 	// ctor
 	TreeKinematic(const std::string& name, const std::string& trunk_branch_name="trunk")
-	: _name(name)
+	: _name(name), _transform(Eigen::Affine3d::Identity())
 	{
 		// create trunk branch
 		_trunk = new BranchKinematic(trunk_branch_name);
