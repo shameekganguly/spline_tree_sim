@@ -7,6 +7,7 @@ SET(CMAKE_CXX_FLAGS "-std=c++11 -I/usr/include -I/usr/local/include")
 set (COMMON_SOURCE
 	${PROJECT_SOURCE_DIR}/src/QuadraticSplineVisual.cpp
 	${PROJECT_SOURCE_DIR}/src/QuadraticSplineKinematic.cpp
+	${PROJECT_SOURCE_DIR}/src/TreeKinematic.cpp
 	# ${PROJECT_SOURCE_DIR}/src/timer/LoopTimer.h
 	# ${PROJECT_SOURCE_DIR}/src/force_sensor/ForceSensorSim.h
 	# ${PROJECT_SOURCE_DIR}/src/force_sensor/ForceSensorDisplay.h
