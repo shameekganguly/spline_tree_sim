@@ -78,3 +78,4 @@ set (CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${PROJECT_SOURCE_DIR}/bin)
 set (BINARY_DIR ${PROJECT_SOURCE_DIR}/bin)
 
 add_subdirectory(01-branch)
+add_subdirectory(02-simple_tree)
