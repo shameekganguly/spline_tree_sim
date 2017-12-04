@@ -50,6 +50,7 @@ public:
 
 // class for data encapsulation and kinematic computations
 class BranchKinematic {
+public:
 	// typedefs
 	typedef std::map<std::string, ChildBranchInfo> ChildInfoList;
 	typedef std::map<std::string, FruitInfo> FruitInfoList;

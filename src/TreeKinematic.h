@@ -11,6 +11,7 @@
 #include <string>
 
 class TreeKinematic {
+public:
 	// typedefs
 	typedef std::vector<std::string> IndexList;
 	typedef std::map<std::string, uint> IndexMap;
@@ -52,6 +53,11 @@ public:
 	// get name
 	const std::string& name() const {
 		return _name;
+	}
+
+	// get dof
+	uint dof() const {
+		return _branches.size() * 2;
 	}
 
 	// add branch
