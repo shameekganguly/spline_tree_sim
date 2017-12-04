@@ -41,10 +41,8 @@ void updateHaptics(
 	chai3d::cShapeSphere* cursor,
 	chai3d::cShapeLine* haptic_force_line,
 	Sai2Graphics::Sai2Graphics* graphics,
-	QuadraticSplineKinematic* spline,
-	QuadraticSplineVisual* spline_graphic,
-	chai3d::cShapeSphere* cherry,
-	const double s_cherry
+	TreeKinematic* tree,
+	Fruit* cherry
 );
 
 // flags for haptic interaction
@@ -100,11 +98,10 @@ int main(int argc, char** argv) {
 	// create the cherry
 	double r0 = branch1->spline()->_radius * 2;
 	double s_cherry = branch1->spline()->_length;
-	auto cherry_fruit = tree->fruitIs("cherry", branch1->_name, s_cherry);
-	cherry_fruit->radiusIs(r0);
-	auto cherry = cherry_fruit->graphic();
-	cherry->m_material->setBrownMaroon();
-	cherry->m_material->setShininess(100);
+	auto cherry = tree->fruitIs("cherry", branch1->_name, s_cherry);
+	cherry->radiusIs(r0);
+	cherry->graphic()->m_material->setBrownMaroon();
+	cherry->graphic()->m_material->setShininess(100);
 
 	// inspect cherry position
 	Vector3d cherry_pos;
@@ -148,7 +145,7 @@ int main(int argc, char** argv) {
 
     // create window and make it current
     glfwWindowHint(GLFW_VISIBLE, 0);
-    GLFWwindow* window = glfwCreateWindow(windowW, windowH, "01-branch", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(windowW, windowH, "02-simple_tree", NULL, NULL);
 	glfwSetWindowPos(window, windowPosX, windowPosY);
 	glfwShowWindow(window);
     glfwMakeContextCurrent(window);
@@ -184,7 +181,7 @@ int main(int argc, char** argv) {
 	    graphics->_world->addChild(haptic_force_line);
 	}
 
-	// thread haptics_thread(updateHaptics, hapticDevice, cursor, haptic_force_line, graphics, spline, spline_graphic, cherry, s_cherry);
+	thread haptics_thread(updateHaptics, hapticDevice, cursor, haptic_force_line, graphics, tree, cherry);
 
 	/*------- Loop -------*/
 	// cache variables
@@ -268,7 +265,7 @@ int main(int argc, char** argv) {
 
 	// stop simulation
 	fSimulationRunning = false;
-	// haptics_thread.join();
+	haptics_thread.join();
 	
     // destroy context
     glfwDestroyWindow(window);
@@ -285,10 +282,8 @@ void updateHaptics(
 	chai3d::cShapeSphere* cursor,
 	chai3d::cShapeLine* haptic_force_line,
 	Sai2Graphics::Sai2Graphics* graphics,
-	QuadraticSplineKinematic* spline,
-	QuadraticSplineVisual* spline_graphic,
-	chai3d::cShapeSphere* cherry,
-	const double s_cherry
+	TreeKinematic* tree,
+	Fruit* cherry
 ) {
 	// create a timer
 	LoopTimer timer;
@@ -305,17 +300,23 @@ void updateHaptics(
 	Vector3d cherry_vel, cherry_acc, cherry_force;
 
 	// spline dynamics variables
-	double ks = 10.0;
+	double ks = 1000.0;
 	double b = 0.05;
-	double cherry_r = cherry->getRadius();
+	double cherry_r = cherry->radius();
 	double cherry_r_max = 0.15;
 	const double cherry_growth_rate = 0.007; // r/ sec
-	MatrixXd Jv_s;
+	MatrixXd Jv_cherry, Jv_haptic;
 	MatrixXd Jlp;
 	VectorXd dq(2);
 	Vector3d F_cherry;
-	VectorXd gamma_cherry;
+	VectorXd gamma_cherry(tree->dof());
 	const double density_cherry = 0.65;
+	string cherry_branch_name = tree->fruitParentBranch(cherry->_name);
+	FruitInfo cherry_info = tree->branch(cherry_branch_name)->fruitInfo(cherry->_name);
+	double s_cherry = cherry_info.s;
+	TreeKinematic::BranchList::iterator branch_itr;
+	BranchKinematic* branch_ptr;
+	QuadraticSplineKinematic* spline_ptr;
 
 	// haptics device
 	cVector3d position;
@@ -336,105 +337,119 @@ void updateHaptics(
 		double curr_time = timer.elapsedTime();
 		double loop_dt = curr_time - last_time;
 
-		// /* --- SPLINE KINEMATICS UPDATES BEG --- */
-		// if (cherry_still_on_plant) {
-		// 	spline->splineLocation(cherry_pos_local, s_cherry);
-		// 	cherry->setLocalPos(cherry_pos_local);
+		/* --- CHERRY KINEMATICS UPDATES BEG --- */
+		if (cherry_still_on_plant) {
+			if (cherry_r < cherry_r_max) {
+				cherry_r += cherry_growth_rate*loop_dt;
+			}
+			cherry->radiusIs(cherry_r);
+		}
+		/* --- CHERRY KINEMATICS UPDATES END --- */
 
-		// 	if (cherry_r < cherry_r_max) {
-		// 		cherry_r += cherry_growth_rate*loop_dt;
-		// 	}
-		// 	cherry->setRadius(cherry_r);
-		// }
-		// /* --- SPLINE KINEMATICS UPDATES END --- */
+		if (fHapticDeviceEnabled) {
+			// haptics updates
+	        hapticDevice->getPosition(position);
+	        cursor->setLocalPos(position*scale_factor + home_pos);
 
-		// if (fHapticDeviceEnabled) {
-		// 	// haptics updates
-	 //        hapticDevice->getPosition(position);
-	 //        cursor->setLocalPos(position*scale_factor + home_pos);
+	        if (cherry_still_on_plant || fHapticSwitchPressed) {
+		        hapticDevice->getUserSwitch(0, fHapticSwitchPressed);
+	        }
 
-	 //        if (cherry_still_on_plant || fHapticSwitchPressed) {
-		//         hapticDevice->getUserSwitch(0, fHapticSwitchPressed);
-	 //        }
+	        if (fHapticSwitchPressed) {
+	        	// ignore if the cursor is too far
+	        	if (
+	        		(cursor->getLocalPos().eigen() - cherry->graphic()->getLocalPos().eigen()).norm() > (cherry->radius()*1.0 + cursor->getRadius())
+	        		&& !haptic_force_line->getShowEnabled()
+        		) {
+	        		fHapticSwitchPressed = false;
+	        	} else {
+		        	haptic_force_line->m_pointA = cherry->graphic()->getLocalPos();
+		        	haptic_force_line->m_pointB = cursor->getLocalPos();
+		        	haptic_force_line->setShowEnabled(true);
 
-	 //        if (fHapticSwitchPressed) {
-	 //        	// ignore if the cursor is too far
-	 //        	if (
-	 //        		(cursor->getLocalPos().eigen() - cherry->getGlobalPos().eigen()).norm() > (cherry->getRadius()*1.0 + cursor->getRadius())
-	 //        		&& !haptic_force_line->getShowEnabled()
-  //       		) {
-	 //        		fHapticSwitchPressed = false;
-	 //        	} else {
-		//         	haptic_force_line->m_pointA = cherry->getGlobalPos();
-		//         	haptic_force_line->m_pointB = cursor->getLocalPos();
-		//         	haptic_force_line->setShowEnabled(true);
+		        	// compute forces
+		        	if (cherry_still_on_plant) {
+		        		F_haptic = haptic_kp * (haptic_force_line->m_pointB - haptic_force_line->m_pointA).eigen();
+		        	} else {
+		        		F_haptic.setZero();
+		        		F_haptic[2] = 9.8*cherry->mass();
+		        	}
+	        	}
+			}
+			if (!fHapticSwitchPressed) {
+				F_haptic.setZero();
+				haptic_force_line->setShowEnabled(false);
+	        }
+		} else {
+			F_haptic.setZero();
+		}
 
-		//         	// compute forces
-		//         	if (cherry_still_on_plant) {
-		//         		F_haptic = haptic_kp * (haptic_force_line->m_pointB - haptic_force_line->m_pointA).eigen();
-		//         	} else {
-		//         		F_haptic.setZero();
-		//         		F_haptic[2] = 9.8*density_cherry*4.0/3.0*M_PI*pow(cherry_r,3);
-		//         	}
-	 //        	}
-		// 	}
-		// 	if (!fHapticSwitchPressed) {
-		// 		F_haptic.setZero();
-		// 		haptic_force_line->setShowEnabled(false);
-	 //        }
-		// }
+		/* --- CHERRY DYNAMICS BEG ---*/
+		if (F_haptic.norm() > cherry_pluck_force_thresh) {
+			// remove cherry from plant and add it to tree
+			tree->positionInWorld(cherry_pos_global, cherry_branch_name, s_cherry);
+			tree->fruitRem(cherry->_name);
 
-		// /* --- CHERRY DYNAMICS BEG ---*/
-		// if (F_haptic.norm() > cherry_pluck_force_thresh) {
-		// 	// remove cherry from plant and add it to tree
-		// 	cherry_pos_global = cherry->getGlobalPos().eigen();
-		// 	spline_graphic->removeChild(cherry);
-		// 	graphics->_world->addChild(cherry);
-		// 	// set flag
-		// 	cherry_still_on_plant = false;
-		// }
+			// TODO: technically this is not necessary since fruitRem does not
+			// remove the visual element from the graphics scene
+			graphics->_world->addChild(cherry->graphic());
 
-		// if (!cherry_still_on_plant) {
-		// 	if (fHapticSwitchPressed) {
-		// 		cherry->setLocalPos(cursor->getLocalPos());
-		// 		cherry_vel.setZero();
-		// 	} else {
-		// 		cherry_pos_global = cherry->getGlobalPos().eigen();
-		// 		cherry_acc.setZero();
-		// 		cherry_acc[2] -= 9.8;
-		// 		cherry_acc += 1.0/(density_cherry*4.0/3.0*M_PI*pow(cherry_r,3))*F_haptic;
-		// 		cherry_vel += cherry_acc*0.01;
-		// 		cherry_pos_global += cherry_vel*0.01;
-		// 		// clamp to ground
-		// 		double cherry_min_height_ground = 0.0;
-		// 		if (cherry_pos_global[2] < cherry_min_height_ground) {
-		// 			cherry_pos_global[2] = cherry_min_height_ground;
-		// 		}
-		// 		cherry->setLocalPos(cherry_pos_global);
-		// 	}
-		// }
+			// set flag
+			cherry_still_on_plant = false;
+		}
 
-		// /* --- CHERRY DYNAMICS END ---*/
+		if (!cherry_still_on_plant) {
+			if (fHapticSwitchPressed) {
+				cherry->graphic()->setLocalPos(cursor->getLocalPos());
+				cherry_vel.setZero();
+			} else {
+				cherry_pos_global = cherry->graphic()->getLocalPos().eigen();
+				cherry_acc.setZero();
+				cherry_acc[2] -= 9.8;
+				cherry_acc += 1.0/cherry->mass()*F_haptic;
+				cherry_vel += cherry_acc*0.01;
+				cherry_pos_global += cherry_vel*0.01;
+				// clamp to ground
+				double cherry_min_height_ground = 0.0;
+				if (cherry_pos_global[2] < cherry_min_height_ground) {
+					cherry_pos_global[2] = cherry_min_height_ground;
+				}
+				cherry->graphic()->setLocalPos(cherry_pos_global);
+			}
+		}
 
-		// /* --- SPLINE DYNAMICS BEG ---*/
-		// spline->splineLinearJacobian(Jv_s, s_cherry);
-		// F_cherry.setZero();
-		// if (cherry_still_on_plant) {
-		// 	F_cherry[2] = -9.8*density_cherry*4.0/3.0*M_PI*pow(cherry_r,3);
-		// 	F_cherry += F_haptic;
-		// }
-		// gamma_cherry = Jv_s.transpose()*F_cherry;
+		/* --- CHERRY DYNAMICS END ---*/
 
-		// spline->splineProjectionLengthJacobian(Jlp, 0.5);
-		// dq[0] = -Jlp(0,0)*ks/b*spline->splineProjectionLength(0.5) + gamma_cherry[0]/b;
-		// dq[1] = -Jlp(0,1)*ks/b*spline->splineProjectionLength(0.5) + gamma_cherry[1]/b;
-		// spline->_alpha += dq[0]*loop_dt;
-		// spline->_beta += dq[1]*loop_dt;
+		/* --- TREE DYNAMICS BEG ---*/
+		tree->jacobianLinear(Jv_cherry, cherry_branch_name, s_cherry);
 
-		// if (fHapticDeviceEnabled) {
-		// 	// apply haptics forces
-		// 	hapticDevice->setForceAndTorqueAndGripperForce(-cVector3d(F_haptic)*haptic_force_scale, Vector3d(0.0, 0.0, 0.0), 0.0);
-		// }
+		F_cherry.setZero();
+		if (cherry_still_on_plant) {
+			F_cherry[2] = -9.8*cherry->mass();
+			F_cherry += F_haptic;
+		}
+		gamma_cherry = Jv_cherry.transpose()*F_cherry;
+
+		// loop over all branches
+		for (branch_itr=tree->branchesItrBegin(); branch_itr!=tree->branchesItrEnd(); ++branch_itr) {
+			branch_ptr = branch_itr->second;
+			spline_ptr = branch_ptr->spline();
+			// get index in gamma
+			uint branch_index = tree->branchIndex(branch_ptr->_name);
+			// compute dq
+			spline_ptr->splineProjectionLengthJacobian(Jlp, 0.5);
+			double ks_spline = ks*spline_ptr->_radius;
+			dq[0] = -Jlp(0,0)*ks_spline/b*spline_ptr->splineProjectionLength(0.5) + gamma_cherry[2*branch_index + 0]/b;
+			dq[1] = -Jlp(0,1)*ks_spline/b*spline_ptr->splineProjectionLength(0.5) + gamma_cherry[2*branch_index + 1]/b;
+			spline_ptr->_alpha += dq[0]*loop_dt;
+			spline_ptr->_beta += dq[1]*loop_dt;
+		}
+		/* --- TREE DYNAMICS END ---*/
+
+		if (fHapticDeviceEnabled) {
+			// apply haptics forces
+			hapticDevice->setForceAndTorqueAndGripperForce(-cVector3d(F_haptic)*haptic_force_scale, Vector3d(0.0, 0.0, 0.0), 0.0);
+		}
 
 		// -------------------------------------------
 		// update last time
