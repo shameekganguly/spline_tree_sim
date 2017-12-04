@@ -66,7 +66,7 @@ public:
 				parent_br->spline()->splineOrientation(rotation, child_info.s);
 				rotation = parent_br->splineVisual()->getLocalRot().eigen() * rotation;
 				parent_br->spline()->splineLocation(position, child_info.s);
-				position = rotation*position;
+				position = parent_br->splineVisual()->getLocalRot().eigen()*position;
 				position += parent_br->splineVisual()->getLocalPos().eigen();
 				rotation = rotation * child_info.rotation;
 			}
