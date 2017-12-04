@@ -12,6 +12,8 @@
 
 class TreeKinematic {
 	// typedefs
+	typedef std::vector<std::string> IndexList;
+	typedef std::map<std::string, uint> IndexMap;
 	typedef std::map<std::string, BranchKinematic*> BranchList;
 	typedef std::map<std::string, std::string> ParentNameMap;
 	typedef std::map<std::string, Fruit*> FruitList;
@@ -114,6 +116,28 @@ public:
 			// update info
 			auto parent = branch(it->second);
 			parent->childBranchInfoIs(branch_name, new_info);
+		}
+	}
+
+	// access branch at given index. index must be in range [0 - _branches.size()]
+	std::string branchAtIndex(const uint index) const {
+		if (index >= _branch_indices.size()) {
+			return "";
+		} else {
+			return _branch_indices[index];
+		}
+	}
+
+	// get index for a member branch such that:
+	// branchAtIndex(branchIndex(name)) = name, if name is valid
+	// otherwise,
+	// branchAtIndex(branchIndex(name)) = ""
+	uint branchIndex(const std::string& name) const {
+		auto it = _branch_index_map.find(name);
+		if (it != _branch_index_map.end()) {
+			return it->second;
+		} else {
+			return _branch_indices.size() + 1;
 		}
 	}
 
@@ -227,7 +251,15 @@ public:
 	virtual void orientationInWorld(Eigen::Matrix3d& ret_mat, const std::string& branch_name, double s) const;
 
 	// get linear jacobian
+	// joint arrangement is linear in the current branch listing order
+	// each joint is assumed to be (alpha, beta) in that order
 	virtual void jacobianLinear(Eigen::MatrixXd& ret_mat, const std::string& branch_name, double s) const;
+
+	// protected member functions
+protected:
+	// update the branch index list. called internally whenever tree structure
+	// is changed
+	virtual void updateBranchIndices();
 
 	// data members
 protected:
@@ -236,6 +268,12 @@ protected:
 
 	// base frame pose in world frame
 	Eigen::Affine3d _transform;
+
+	// vector of branch names for indexing
+	IndexList _branch_indices;
+
+	// map from branch name to index
+	IndexMap _branch_index_map;
 
 	// flat list of all branches
 	BranchList _branches;

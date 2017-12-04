@@ -46,6 +46,9 @@ BranchKinematic* TreeKinematic::branchIs(const std::string& name, const std::str
 	// - update parent map
 	_parent_map[name] = parent_name;
 	
+	// update branch indices
+	updateBranchIndices();
+
 	// return created branch
 	return new_branch;
 }
@@ -81,6 +84,9 @@ TreeKinematic::BranchList TreeKinematic::branchRem(const std::string& name) {
 	// update branches maps
 	ret_list[name] = it->second;
 	_branches.erase(name);
+
+	// update branch indices
+	updateBranchIndices();
 
 	return ret_list;
 }
@@ -234,5 +240,75 @@ void TreeKinematic::orientationInWorld(Matrix3d& ret_mat, const std::string& bra
 
 // get linear jacobian
 void TreeKinematic::jacobianLinear(MatrixXd& ret_mat, const std::string& branch_name, double s) const {
+	string parent_name = "";
+	ret_mat.setZero(3, 2*_branches.size());
 
+	// start at branch and work down to trunk
+	string br_name_local = branch_name;
+	double s_local = s;
+	BranchList::const_iterator br_itr;
+	IndexMap::const_iterator br_ind_itr;
+	const BranchList::const_iterator br_beg = _branches.cbegin();
+	BranchList::const_iterator parent_br_itr;
+	Vector3d position;
+	Matrix3d rotation;
+	MatrixXd branch_jacobian_linear(3,2);
+	int br_index;
+
+	// check if valid branch
+	br_itr = _branches.find(branch_name);
+	if (br_itr == _branches.cend()) {
+		throw(runtime_error("Unknown branch."));
+	}
+
+	// update transform
+	do {
+		// get branch
+		br_itr = _branches.find(br_name_local);
+		br_ind_itr = _branch_index_map.find(br_name_local);
+		br_index = br_ind_itr->second;
+		// get position in spline
+		br_itr->second->spline()->splineOrientation(rotation, s_local);
+		br_itr->second->spline()->splineLinearJacobian(branch_jacobian_linear, s_local);
+		ret_mat.block(0,br_index*2, 3, 2) = branch_jacobian_linear;
+		ret_mat = rotation * ret_mat;
+
+		// find parent
+		if (br_name_local.compare(trunk()) != 0) {
+			const auto it = _parent_map.find(branch_name);
+			parent_name = it->second;
+		} else {
+			parent_name = "";
+		}
+
+		if (!parent_name.empty()) {
+			// get parent
+			parent_br_itr = _branches.find(parent_name);
+			// get info in parent
+			ChildBranchInfo info = parent_br_itr->second->childBranchInfo(br_name_local);
+			// update rotation and position
+			ret_mat = info.rotation * ret_mat;
+			// update s and br
+			br_name_local = parent_name;
+			s_local = info.s;
+		}
+	} while (!parent_name.empty());
+
+	// apply tree to world rotation
+	ret_mat = _transform.rotation() * ret_mat;
+}
+
+// update the branch index list. called internally whenever tree structure
+// is changed
+void TreeKinematic::updateBranchIndices() {
+	// clear existing index list and maps
+	_branch_index_map.clear();
+	_branch_indices.clear();
+
+	for (auto itr: _branches) {
+		// insert into vector
+		_branch_indices.push_back(itr.first);
+		// insert into map
+		_branch_index_map[itr.first] = _branch_indices.size() - 1;
+	}
 }

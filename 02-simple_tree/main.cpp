@@ -106,6 +106,7 @@ int main(int argc, char** argv) {
 	cherry->m_material->setBrownMaroon();
 	cherry->m_material->setShininess(100);
 
+	// inspect cherry position
 	Vector3d cherry_pos;
 	tree->positionInWorld(cherry_pos, branch1->_name, s_cherry);
 	cout << "Cherry located at: " << cherry_pos.transpose() << endl;
@@ -115,6 +116,16 @@ int main(int argc, char** argv) {
 	material->setColorf(0.3, 0.15, 0.1);
 	material->setShininess(100);
 	tree_visual->branchMaterialIs(material);
+
+	// inspect Jacobian to cherry
+	MatrixXd cherry_Jv;
+	tree->jacobianLinear(cherry_Jv, branch1->_name, s_cherry);
+	cout << "Cherry Jacobian: " << endl;
+	cout << cherry_Jv << endl;
+	cout << "Branch 0: " << tree->branchAtIndex(0) << endl;
+	cout << "Branch 1: " << tree->branchAtIndex(1) << endl;
+	cout << "Branch 2: " << tree->branchAtIndex(2) << endl;
+	cout << "Branch 3: " << tree->branchAtIndex(3) << endl;
 
 	/*------- Set up visualization -------*/
     // set up error callback
