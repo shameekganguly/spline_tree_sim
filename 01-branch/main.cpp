@@ -394,6 +394,9 @@ void updateHaptics(
 			F_cherry[2] = -9.8*density_cherry*4.0/3.0*M_PI*pow(cherry_r,3);
 			F_cherry += F_haptic;
 		}
+		Matrix3d rot_world;
+		rot_world = spline_graphic->getLocalRot().eigen();
+		Jv_s = rot_world * Jv_s;
 		gamma_cherry = Jv_s.transpose()*F_cherry;
 
 		spline->splineProjectionLengthJacobian(Jlp, 0.5);
