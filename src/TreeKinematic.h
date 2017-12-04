@@ -208,17 +208,23 @@ public:
 	}
 
 	/* ---- Kinematic evaluations ---- */
+	// get transform in tree frame
+	virtual void transformInTree(Eigen::Affine3d& ret_trans, const std::string& branch_name, double s) const;
+
+	// get transform in world frame
+	virtual void transformInWorld(Eigen::Affine3d& ret_trans, const std::string& branch_name, double s) const;
+
 	// get position in tree frame
 	virtual void positionInTree(Eigen::Vector3d& ret_vec, const std::string& branch_name, double s) const;
 
 	// get orientation in tree frame
-	virtual void orientationInTree(Eigen::Vector3d& ret_vec, const std::string& branch_name, double s) const;
+	virtual void orientationInTree(Eigen::Matrix3d& ret_mat, const std::string& branch_name, double s) const;
 
 	// get position in world frame
 	virtual void positionInWorld(Eigen::Vector3d& ret_vec, const std::string& branch_name, double s) const;
 
 	// get orientation in world frame
-	virtual void orientationInWorld(Eigen::Vector3d& ret_vec, const std::string& branch_name, double s) const;
+	virtual void orientationInWorld(Eigen::Matrix3d& ret_mat, const std::string& branch_name, double s) const;
 
 	// get linear jacobian
 	virtual void jacobianLinear(Eigen::MatrixXd& ret_mat, const std::string& branch_name, double s) const;

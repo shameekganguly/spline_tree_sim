@@ -145,24 +145,91 @@ Fruit* TreeKinematic::fruitRem(const std::string& name) {
 	return fruit;
 }
 
+// get transform in tree frame
+void TreeKinematic::transformInTree(Eigen::Affine3d& ret_trans, const std::string& branch_name, double s) const {
+	string parent_name = "";
+	ret_trans = Affine3d::Identity();
+
+	string br_name_local = branch_name;
+	double s_local = s;
+	BranchList::const_iterator br_itr;
+	BranchList::const_iterator parent_br_itr;
+	Vector3d position;
+	Matrix3d rotation;
+
+	// check if valid branch
+	br_itr = _branches.find(branch_name);
+	if (br_itr == _branches.cend()) {
+		throw(runtime_error("Unknown branch."));
+	}
+
+	// update transform
+	do {
+		// get branch
+		br_itr = _branches.find(br_name_local);
+		// get position in spline
+		br_itr->second->spline()->splineOrientation(rotation, s_local);
+		br_itr->second->spline()->splineLocation(position, s_local);
+		ret_trans.translation() = rotation*ret_trans.translation() + position;
+		ret_trans.linear() = rotation * ret_trans.linear();
+
+		// find parent
+		if (br_name_local.compare(trunk()) != 0) {
+			const auto it = _parent_map.find(branch_name);
+			parent_name = it->second;
+		} else {
+			parent_name = "";
+		}
+
+		if (!parent_name.empty()) {
+			// get parent
+			parent_br_itr = _branches.find(parent_name);
+			// get info in parent
+			ChildBranchInfo info = parent_br_itr->second->childBranchInfo(br_name_local);
+			// update rotation and position
+			ret_trans.translation() = info.rotation*ret_trans.translation();
+			ret_trans.linear() = info.rotation * ret_trans.linear();
+			// update s and br
+			br_name_local = parent_name;
+			s_local = info.s;
+		}
+	} while (!parent_name.empty());
+}
+
+// get transform in world frame
+void TreeKinematic::transformInWorld(Eigen::Affine3d& ret_trans, const std::string& branch_name, double s) const {
+	// get orientation in tree
+	transformInTree(ret_trans, branch_name, s);
+	// apply transform to get position in world
+	ret_trans = _transform * ret_trans;
+}
+
 // get position in tree frame
 void TreeKinematic::positionInTree(Vector3d& ret_vec, const std::string& branch_name, double s) const {
-
+	Affine3d trans;
+	transformInTree(trans, branch_name, s);
+	ret_vec = trans.translation();
 }
 
 // get orientation in tree frame
-void TreeKinematic::orientationInTree(Vector3d& ret_vec, const std::string& branch_name, double s) const {
-
+void TreeKinematic::orientationInTree(Matrix3d& ret_mat, const std::string& branch_name, double s) const {
+	Affine3d trans;
+	transformInTree(trans, branch_name, s);
+	ret_mat = trans.rotation();
 }
 
 // get position in world frame
 void TreeKinematic::positionInWorld(Vector3d& ret_vec, const std::string& branch_name, double s) const {
-
+	Affine3d trans;
+	transformInWorld(trans, branch_name, s);
+	ret_vec = trans.translation();
 }
 
 // get orientation in world frame
-void TreeKinematic::orientationInWorld(Vector3d& ret_vec, const std::string& branch_name, double s) const {
-
+void TreeKinematic::orientationInWorld(Matrix3d& ret_mat, const std::string& branch_name, double s) const {
+	Affine3d trans;
+	transformInWorld(trans, branch_name, s);
+	ret_mat = trans.rotation();
 }
 
 // get linear jacobian

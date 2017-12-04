@@ -100,11 +100,15 @@ int main(int argc, char** argv) {
 	// create the cherry
 	double r0 = branch1->spline()->_radius * 2;
 	double s_cherry = branch1->spline()->_length;
-	auto cherry_fruit = tree->fruitIs("cherry", "branch-1", s_cherry);
+	auto cherry_fruit = tree->fruitIs("cherry", branch1->_name, s_cherry);
 	cherry_fruit->radiusIs(r0);
 	auto cherry = cherry_fruit->graphic();
 	cherry->m_material->setBrownMaroon();
 	cherry->m_material->setShininess(100);
+
+	Vector3d cherry_pos;
+	tree->positionInWorld(cherry_pos, branch1->_name, s_cherry);
+	cout << "Cherry located at: " << cherry_pos.transpose() << endl;
 
 	// change material for branches and fruits
 	auto material = trunk_br->splineVisual()->m_material;
