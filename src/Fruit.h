@@ -7,6 +7,7 @@
 
 #include <string>
 #include <cmath>
+#include <stdexcept>
 
 class Fruit {
 	// member functions
@@ -42,6 +43,19 @@ public:
 	// set radius
 	void radiusIs(const double rad) {
 		_graphic->setRadius(rad);
+	}
+
+	// get density
+	double density() const {
+		return _density;
+	}
+
+	// set density
+	void densityIs(const double density) {
+		if (density <= 0.0) {
+			throw(std::runtime_error("Negative density."));
+		}
+		_density = density;
 	}
 
 	// get volume
