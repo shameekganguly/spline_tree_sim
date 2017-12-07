@@ -41,9 +41,9 @@ void updateHaptics(
 	chai3d::cShapeSphere* cursor,
 	chai3d::cShapeLine* haptic_force_line,
 	Sai2Graphics::Sai2Graphics* graphics,
-	TreeKinematic* tree,
-	Fruit* cherry
+	TreeKinematic* tree
 );
+string getClosestFruitToPoint(const TreeKinematic* tree, const Vector3d point_pos);
 
 // flags for haptic interaction
 bool fHapticDeviceEnabled = false;
@@ -95,24 +95,17 @@ int main(int argc, char** argv) {
 	spline = branch3->spline();
 	spline->_length = 0.3; spline->_radius = 0.02;
 
-	// create the cherry
+	// create a cherry
 	double r0 = branch1->spline()->_radius * 2;
 	double s_cherry = branch1->spline()->_length;
 	auto cherry = tree->fruitIs("cherry", branch1->_name, s_cherry);
 	cherry->radiusIs(r0);
-	cherry->graphic()->m_material->setBrownMaroon();
-	cherry->graphic()->m_material->setShininess(100);
+	cherry->densityIs(10);
 
 	// inspect cherry position
 	Vector3d cherry_pos;
 	tree->positionInWorld(cherry_pos, branch1->_name, s_cherry);
 	cout << "Cherry located at: " << cherry_pos.transpose() << endl;
-
-	// change material for branches and fruits
-	auto material = trunk_br->splineVisual()->m_material;
-	material->setColorf(0.3, 0.15, 0.1);
-	material->setShininess(100);
-	tree_visual->branchMaterialIs(material);
 
 	// inspect Jacobian to cherry
 	MatrixXd cherry_Jv;
@@ -123,6 +116,29 @@ int main(int argc, char** argv) {
 	cout << "Branch 1: " << tree->branchAtIndex(1) << endl;
 	cout << "Branch 2: " << tree->branchAtIndex(2) << endl;
 	cout << "Branch 3: " << tree->branchAtIndex(3) << endl;
+
+	// create another cherry
+	double r02 = branch2->spline()->_radius * 2;
+	double s_cherry2 = branch2->spline()->_length;
+	auto cherry2 = tree->fruitIs("cherry2", branch2->_name, s_cherry2);
+	cherry2->radiusIs(r02);
+	cherry2->densityIs(10);
+
+	// change material for branches and fruits
+	auto material = trunk_br->splineVisual()->m_material;
+	material->m_diffuse = cColorf(0.3, 0.15, 0.1);
+	material->m_ambient = cColorf(0.1, 0.06, 0.0);
+	material->m_specular = cColorf(0.0, 0.05, 0.05);
+	material->setShininess(100);
+	tree_visual->branchMaterialIs(material);
+
+	auto fruit_material = cherry->graphic()->m_material;
+	fruit_material->m_diffuse = cColorf(0.6, 0.4, 0.05);
+	fruit_material->m_ambient = cColorf(0.2, 0.02, 0.02);
+	fruit_material->m_specular = cColorf(0.0, 0.05, 0.05);
+	fruit_material->setShininess(100);
+	tree_visual->fruitMaterialIs(fruit_material);
+
 
 	/*------- Set up visualization -------*/
     // set up error callback
@@ -181,7 +197,7 @@ int main(int argc, char** argv) {
 	    graphics->_world->addChild(haptic_force_line);
 	}
 
-	thread haptics_thread(updateHaptics, hapticDevice, cursor, haptic_force_line, graphics, tree, cherry);
+	thread haptics_thread(updateHaptics, hapticDevice, cursor, haptic_force_line, graphics, tree);
 
 	/*------- Loop -------*/
 	// cache variables
@@ -282,8 +298,7 @@ void updateHaptics(
 	chai3d::cShapeSphere* cursor,
 	chai3d::cShapeLine* haptic_force_line,
 	Sai2Graphics::Sai2Graphics* graphics,
-	TreeKinematic* tree,
-	Fruit* cherry
+	TreeKinematic* tree
 ) {
 	// create a timer
 	LoopTimer timer;
@@ -294,39 +309,45 @@ void updateHaptics(
 	bool fTimerDidSleep = true;
 
 	// cherry updates
+	Fruit* cherry;
 	Vector3d cherry_pos_local, cherry_pos_global;
 	bool cherry_still_on_plant = true;
 	const double cherry_pluck_force_thresh = 1.5;
-	Vector3d cherry_vel, cherry_acc, cherry_force;
+	Vector3d cherry_acc;
 
 	// spline dynamics variables
-	double ks = 1000.0;
+	double ks = 10000.0;
 	double b = 0.05;
-	double cherry_r = cherry->radius();
-	double cherry_r_max = 0.15;
-	const double cherry_growth_rate = 0.007; // r/ sec
 	MatrixXd Jv_cherry, Jv_haptic;
 	MatrixXd Jlp;
 	VectorXd dq(2);
 	Vector3d F_cherry;
 	VectorXd gamma_cherry(tree->dof());
-	const double density_cherry = 0.65;
-	string cherry_branch_name = tree->fruitParentBranch(cherry->_name);
-	FruitInfo cherry_info = tree->branch(cherry_branch_name)->fruitInfo(cherry->_name);
-	double s_cherry = cherry_info.s;
+	string cherry_branch_name;
+	FruitInfo cherry_info;
+	TreeKinematic::FruitList::iterator fruit_itr;
 	TreeKinematic::BranchList::iterator branch_itr;
 	BranchKinematic* branch_ptr;
 	QuadraticSplineKinematic* spline_ptr;
+	TreeKinematic::FruitList fallen_cherries;
+	map<string, Vector3d> falling_cherry_vels;
 
 	// haptics device
 	cVector3d position;
 	const double scale_factor = 80.0;
 	Vector3d home_pos(-0.25, 0.0, 1.5);
 	Vector3d F_haptic;
-	double last_distance;
+	double cursor_distance;
 	Vector3d last_dir;
 	const double haptic_kp = 1.5;
 	const double haptic_force_scale = 9.0;
+
+	bool carrying_cherry = false;
+	string closest_cherry_name;
+	string closest_cherry_branch_name;
+	FruitInfo closest_cherry_info;
+	Fruit* haptic_cherry;
+	Vector3d closest_cherry_pos;
 
 	// start simulation loop
 	fSimulationRunning = true;
@@ -337,48 +358,53 @@ void updateHaptics(
 		double curr_time = timer.elapsedTime();
 		double loop_dt = curr_time - last_time;
 
-		/* --- CHERRY KINEMATICS UPDATES BEG --- */
-		if (cherry_still_on_plant) {
-			if (cherry_r < cherry_r_max) {
-				cherry_r += cherry_growth_rate*loop_dt;
-			}
-			cherry->radiusIs(cherry_r);
-		}
-		/* --- CHERRY KINEMATICS UPDATES END --- */
-
 		if (fHapticDeviceEnabled) {
 			// haptics updates
 	        hapticDevice->getPosition(position);
 	        cursor->setLocalPos(position*scale_factor + home_pos);
 
-	        if (cherry_still_on_plant || fHapticSwitchPressed) {
-		        hapticDevice->getUserSwitch(0, fHapticSwitchPressed);
-	        }
+	        hapticDevice->getUserSwitch(0, fHapticSwitchPressed);
 
 	        if (fHapticSwitchPressed) {
-	        	// ignore if the cursor is too far
-	        	if (
-	        		(cursor->getLocalPos().eigen() - cherry->graphic()->getLocalPos().eigen()).norm() > (cherry->radius()*1.0 + cursor->getRadius())
-	        		&& !haptic_force_line->getShowEnabled()
-        		) {
-	        		fHapticSwitchPressed = false;
-	        	} else {
-		        	haptic_force_line->m_pointA = cherry->graphic()->getLocalPos();
-		        	haptic_force_line->m_pointB = cursor->getLocalPos();
-		        	haptic_force_line->setShowEnabled(true);
-
-		        	// compute forces
-		        	if (cherry_still_on_plant) {
-		        		F_haptic = haptic_kp * (haptic_force_line->m_pointB - haptic_force_line->m_pointA).eigen();
-		        	} else {
-		        		F_haptic.setZero();
-		        		F_haptic[2] = 9.8*cherry->mass();
-		        	}
+	        	if (!carrying_cherry) {
+	        		cherry_still_on_plant = true;
+					// update cursor distance to closest fruit on tree
+					closest_cherry_name = getClosestFruitToPoint(tree, cursor->getLocalPos().eigen());
+					haptic_cherry = tree->fruit(closest_cherry_name);
+					if (NULL == haptic_cherry) {
+						fHapticSwitchPressed = false;
+					} else {
+						closest_cherry_branch_name = tree->fruitParentBranch(closest_cherry_name);
+						closest_cherry_info = tree->branch(closest_cherry_branch_name)->fruitInfo(closest_cherry_name);
+						tree->positionInWorld(closest_cherry_pos, closest_cherry_branch_name, closest_cherry_info.s);
+						cursor_distance = (cursor->getLocalPos().eigen() - closest_cherry_pos).norm();
+						// cout << "Cursor distance " << cursor_distance << endl;
+						if (cursor_distance > (haptic_cherry->radius()*1.0 + cursor->getRadius())) {
+							fHapticSwitchPressed = false;
+						}
+					}
 	        	}
-			}
+	        }
+
+	        if(fHapticSwitchPressed) {
+	        	carrying_cherry = true;
+				haptic_force_line->m_pointA = haptic_cherry->graphic()->getLocalPos();
+				haptic_force_line->m_pointB = cursor->getLocalPos();
+				haptic_force_line->setShowEnabled(true);
+
+				// compute forces
+				if (cherry_still_on_plant) {
+					F_haptic = haptic_kp * (haptic_force_line->m_pointB - haptic_force_line->m_pointA).eigen();
+				} else {
+					F_haptic.setZero();
+					F_haptic[2] = 9.8*haptic_cherry->mass();
+				}
+	        }
+
 			if (!fHapticSwitchPressed) {
 				F_haptic.setZero();
 				haptic_force_line->setShowEnabled(false);
+				carrying_cherry = false;
 	        }
 		} else {
 			F_haptic.setZero();
@@ -387,28 +413,32 @@ void updateHaptics(
 		/* --- CHERRY DYNAMICS BEG ---*/
 		if (F_haptic.norm() > cherry_pluck_force_thresh) {
 			// remove cherry from plant and add it to tree
-			tree->positionInWorld(cherry_pos_global, cherry_branch_name, s_cherry);
-			tree->fruitRem(cherry->_name);
+			tree->positionInWorld(closest_cherry_pos, closest_cherry_branch_name, closest_cherry_info.s);
+			tree->fruitRem(haptic_cherry->_name);
 
 			// TODO: technically this is not necessary since fruitRem does not
 			// remove the visual element from the graphics scene
-			graphics->_world->addChild(cherry->graphic());
+			graphics->_world->addChild(haptic_cherry->graphic());
 
-			// set flag
+			// add cherry to list of fallen fruits
+			fallen_cherries[haptic_cherry->_name] = haptic_cherry;
+			falling_cherry_vels[haptic_cherry->_name].setZero();
 			cherry_still_on_plant = false;
 		}
 
-		if (!cherry_still_on_plant) {
-			if (fHapticSwitchPressed) {
-				cherry->graphic()->setLocalPos(cursor->getLocalPos());
-				cherry_vel.setZero();
+		// loop over fallen cherries
+		for (auto fallen_fruit_itr: fallen_cherries) {
+			// is fruit the same as the current haptic fruit
+			if (fHapticSwitchPressed && fallen_fruit_itr.first.compare(haptic_cherry->_name) == 0) {
+				fallen_fruit_itr.second->graphic()->setLocalPos(cursor->getLocalPos());
+				falling_cherry_vels[fallen_fruit_itr.first].setZero();
 			} else {
+				cherry = fallen_fruit_itr.second;
 				cherry_pos_global = cherry->graphic()->getLocalPos().eigen();
 				cherry_acc.setZero();
 				cherry_acc[2] -= 9.8;
-				cherry_acc += 1.0/cherry->mass()*F_haptic;
-				cherry_vel += cherry_acc*0.01;
-				cherry_pos_global += cherry_vel*0.01;
+				falling_cherry_vels[fallen_fruit_itr.first] += cherry_acc*0.01;
+				cherry_pos_global += falling_cherry_vels[fallen_fruit_itr.first]*0.01;
 				// clamp to ground
 				double cherry_min_height_ground = 0.0;
 				if (cherry_pos_global[2] < cherry_min_height_ground) {
@@ -417,19 +447,27 @@ void updateHaptics(
 				cherry->graphic()->setLocalPos(cherry_pos_global);
 			}
 		}
-
 		/* --- CHERRY DYNAMICS END ---*/
 
 		/* --- TREE DYNAMICS BEG ---*/
-		tree->jacobianLinear(Jv_cherry, cherry_branch_name, s_cherry);
+		gamma_cherry.setZero();
+		// loop over fruits
+		for (fruit_itr=tree->fruitsItrBegin(); fruit_itr!=tree->fruitsItrEnd(); ++fruit_itr) {
+			cherry = fruit_itr->second;
+			cherry_branch_name = tree->fruitParentBranch(fruit_itr->first);
+			double s_cherry = tree->branch(cherry_branch_name)->fruitInfo(fruit_itr->first).s;
 
-		F_cherry.setZero();
-		if (cherry_still_on_plant) {
-			F_cherry[2] = -9.8*cherry->mass();
-			F_cherry += F_haptic;
+			F_cherry.setZero();
+			F_cherry[2] = -9.8*fruit_itr->second->mass();
+			if (carrying_cherry && fruit_itr->first.compare(haptic_cherry->_name) == 0) {
+				F_cherry += F_haptic;
+			}
+
+			tree->jacobianLinear(Jv_cherry, cherry_branch_name, s_cherry);
+			gamma_cherry += Jv_cherry.transpose()*F_cherry;
 		}
-		gamma_cherry = Jv_cherry.transpose()*F_cherry;
 
+		// cout << "Gamma cherry" << gamma_cherry.transpose() << endl;
 		// loop over all branches
 		for (branch_itr=tree->branchesItrBegin(); branch_itr!=tree->branchesItrEnd(); ++branch_itr) {
 			branch_ptr = branch_itr->second;
@@ -438,7 +476,7 @@ void updateHaptics(
 			uint branch_index = tree->branchIndex(branch_ptr->_name);
 			// compute dq
 			spline_ptr->splineProjectionLengthJacobian(Jlp, 0.5);
-			double ks_spline = ks*spline_ptr->_radius;
+			double ks_spline = ks*pow(spline_ptr->_radius, 2);
 			dq[0] = -Jlp(0,0)*ks_spline/b*spline_ptr->splineProjectionLength(0.5) + gamma_cherry[2*branch_index + 0]/b;
 			dq[1] = -Jlp(0,1)*ks_spline/b*spline_ptr->splineProjectionLength(0.5) + gamma_cherry[2*branch_index + 1]/b;
 			spline_ptr->_alpha += dq[0]*loop_dt;
@@ -518,4 +556,31 @@ void mouseClick(GLFWwindow* window, int button, int action, int mods) {
 		default:
 			break;
 	}
+}
+
+//------------------------------------------------------------------------------
+string getClosestFruitToPoint(const TreeKinematic* tree, const Vector3d point_pos) {
+	double min_distance = -1;
+	string closest_fruit = "";
+
+	// temp variables
+	string branch_name;
+	string fruit_name;
+	const BranchKinematic* branch_ptr;
+	FruitInfo fruit_info;
+	Vector3d fruit_pos;
+	double distance;
+	for (auto fruit_itr = tree->fruitsItrBegin(); fruit_itr != tree->fruitsItrEnd(); ++fruit_itr) {
+		fruit_name = fruit_itr->first;
+		branch_name = tree->fruitParentBranch(fruit_name);
+		branch_ptr = tree->branch(branch_name);
+		fruit_info = branch_ptr->fruitInfo(fruit_name);
+		tree->positionInWorld(fruit_pos, branch_name, fruit_info.s);
+		distance = (fruit_pos - point_pos).norm();
+		if (min_distance < 0 || min_distance > distance) {
+			min_distance = distance;
+			closest_fruit = fruit_name;
+		}
+	}
+	return closest_fruit;
 }
