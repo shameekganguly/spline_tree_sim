@@ -239,13 +239,14 @@ void TreeKinematic::orientationInWorld(Matrix3d& ret_mat, const std::string& bra
 }
 
 // get linear jacobian
-void TreeKinematic::jacobianLinear(MatrixXd& ret_mat, const std::string& branch_name, double s) const {
+void TreeKinematic::jacobianLinear(MatrixXd& ret_mat, const std::string& branch_name, const SplinePointCartesian& spline_point) const {
 	string parent_name = "";
 	ret_mat.setZero(3, 2*_branches.size());
 
 	// start at branch and work down to trunk
 	string br_name_local = branch_name;
-	double s_local = s;
+	double s_local = spline_point.s;
+	SplinePointCartesian spt_local = spline_point;
 	BranchList::const_iterator br_itr;
 	IndexMap::const_iterator br_ind_itr;
 	const BranchList::const_iterator br_beg = _branches.cbegin();
@@ -269,7 +270,7 @@ void TreeKinematic::jacobianLinear(MatrixXd& ret_mat, const std::string& branch_
 		br_index = br_ind_itr->second;
 		// get position in spline
 		br_itr->second->spline()->splineOrientation(rotation, s_local);
-		br_itr->second->spline()->splineLinearJacobian(branch_jacobian_linear, s_local);
+		br_itr->second->spline()->splineLinearJacobian(branch_jacobian_linear, spt_local);
 		ret_mat.block(0,br_index*2, 3, 2) = branch_jacobian_linear;
 		ret_mat = rotation * ret_mat;
 
@@ -291,6 +292,7 @@ void TreeKinematic::jacobianLinear(MatrixXd& ret_mat, const std::string& branch_
 			// update s and br
 			br_name_local = parent_name;
 			s_local = info.s;
+			spt_local = SplinePointCartesian(s_local, 0, 0);
 		}
 	} while (!parent_name.empty());
 

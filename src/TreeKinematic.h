@@ -256,10 +256,10 @@ public:
 	// get orientation in world frame
 	virtual void orientationInWorld(Eigen::Matrix3d& ret_mat, const std::string& branch_name, double s) const;
 
-	// get linear jacobian
+	// get linear jacobian for point on spline
 	// joint arrangement is linear in the current branch listing order
 	// each joint is assumed to be (alpha, beta) in that order
-	virtual void jacobianLinear(Eigen::MatrixXd& ret_mat, const std::string& branch_name, double s) const;
+	virtual void jacobianLinear(Eigen::MatrixXd& ret_mat, const std::string& branch_name, const SplinePointCartesian& spline_point) const;
 
 	// protected member functions
 protected:

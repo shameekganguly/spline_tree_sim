@@ -6,6 +6,28 @@
 
 #include <Eigen/Core>
 
+// co-ordinates of 3d space within the spline's surface using Cartesian representation
+struct SplinePointCartesian {
+	double s; // length along the spline
+	double py; // y co-ordinate in the planar frame at s
+	double pz; // z co-ordinate in the planar frame at s
+	// ctor
+	SplinePointCartesian (double ss=0.0, double spy=0.0, double spz=0.0)
+	: s(ss), py(spy), pz(spz)
+	{/* Nothing to do */}
+};
+
+// co-ordinates of 3d space within the spline's surface using polar representation
+struct SplinePointPolar {
+	double s; // length along the spline
+	double t; // radial distance in the planar frame at s
+	double eta; // angle subtended with X axis in planar frame at s
+	// ctor
+	SplinePointPolar (double ss=0.0, double st=0.0, double seta=0.0)
+	: s(ss), t(st), eta(seta)
+	{/* Nothing to do */}
+};
+
 class QuadraticSplineKinematic {
 // public member functions
 public:
@@ -15,8 +37,11 @@ public:
 	// dtor
 	virtual ~QuadraticSplineKinematic();
 
-	// get the local position of a point given the deformation coordinates
-	virtual void deformedLocation(Eigen::Vector3d& ret_vector, double s, double t, double eta) const;
+	// get the local position of a point given the deformation coordinates in polar form
+	virtual void deformedLocation(Eigen::Vector3d& ret_vector, const SplinePointPolar& point) const;
+
+	// get the local position of a point given the deformation coordinates in Cartesian form
+	virtual void deformedLocation(Eigen::Vector3d& ret_vector, const SplinePointCartesian& point) const;
 
 	// compute position on spline
 	virtual void splineLocation(Eigen::Vector3d& ret_vector, double s) const;
@@ -32,6 +57,12 @@ public:
 
 	// compute linear jacobian of point on spline
 	virtual void splineLinearJacobian(Eigen::MatrixXd& ret_matrix, double s) const;
+
+	// compute partial derivative of the rotation matrix for the frame at a point along the spline
+	virtual void splinedRotdq(Eigen::Matrix3d& ret_dRot_dalp, Eigen::Matrix3d& ret_dRot_dbeta, double s) const;
+
+	// compute linear jacobian of point not necessarily on the spline
+	virtual void splineLinearJacobian(Eigen::MatrixXd& ret_matrix, const SplinePointCartesian& spline_point) const;
 
 	// compute jacobian of spline projection length, for spring force
 	// computations

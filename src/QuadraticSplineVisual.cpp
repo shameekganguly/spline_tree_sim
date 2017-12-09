@@ -73,6 +73,7 @@ void QuadraticSplineVisual::render(cRenderOptions& a_options)
             // point 1 and 3 lie on the current angle
             // point 2 and 4 lie on the next angle
             Vector3d normal1, normal2;
+            SplinePointPolar spoint;
             for (uint i = 0; i < (_nv_longitudinal-1); i++) {
             	for (uint j = 0; j < (_nv_plane); j++) {
             		// i = index of current cross section plane
@@ -80,15 +81,21 @@ void QuadraticSplineVisual::render(cRenderOptions& a_options)
 
             		// get spatial locations of the four corners in the local
             		// frame. t != 0, eta = 0 => on the y-axis
-            		_kinematic->deformedLocation(point1, /* s */((double)i)*_ds_longitudinal, /* t */ _kinematic->_radius, /* eta */ ((double)j)*_ds_angle);
-					_kinematic->deformedLocation(point3, /* s */((double)i+1)*_ds_longitudinal, /* t */ _kinematic->_radius, /* eta */ ((double)j)*_ds_angle);
+                    spoint = SplinePointPolar(/* s */((double)i)*_ds_longitudinal, /* t */ _kinematic->_radius, /* eta */ ((double)j)*_ds_angle);
+            		_kinematic->deformedLocation(point1, spoint);
+                    spoint = SplinePointPolar(/* s */((double)i+1)*_ds_longitudinal, /* t */ _kinematic->_radius, /* eta */ ((double)j)*_ds_angle);
+					_kinematic->deformedLocation(point3, spoint);
             		if (j == (_nv_plane - 1)) {
             			// wrap around. so point 2 and 4 are on zero angle again
-						_kinematic->deformedLocation(point2, /* s */((double)i)*_ds_longitudinal, /* t */ _kinematic->_radius, /* eta */ 0.0);
-						_kinematic->deformedLocation(point4, /* s */((double)i+1)*_ds_longitudinal, /* t */ _kinematic->_radius, /* eta */ 0.0);
+                        spoint = SplinePointPolar(/* s */((double)i)*_ds_longitudinal, /* t */ _kinematic->_radius, /* eta */ 0.0);
+						_kinematic->deformedLocation(point2, spoint);
+                        spoint = SplinePointPolar(/* s */((double)i+1)*_ds_longitudinal, /* t */ _kinematic->_radius, /* eta */ 0.0);
+						_kinematic->deformedLocation(point4, spoint);
             		} else {
-						_kinematic->deformedLocation(point2, /* s */((double)i)*_ds_longitudinal, /* t */ _kinematic->_radius, /* eta */ ((double)j+1)*_ds_angle);
-						_kinematic->deformedLocation(point4, /* s */((double)i+1)*_ds_longitudinal, /* t */ _kinematic->_radius, /* eta */ ((double)j+1)*_ds_angle);	
+                        spoint = SplinePointPolar(/* s */((double)i)*_ds_longitudinal, /* t */ _kinematic->_radius, /* eta */ ((double)j+1)*_ds_angle);
+						_kinematic->deformedLocation(point2, spoint);
+                        spoint = SplinePointPolar(/* s */((double)i+1)*_ds_longitudinal, /* t */ _kinematic->_radius, /* eta */ ((double)j+1)*_ds_angle);
+						_kinematic->deformedLocation(point4, spoint);
             		}
 
             		// add triangle 1
