@@ -1,4 +1,4 @@
-// 01-branch: visual display of a single branch in a tree
+// 02-simple_tree: haptic display of a simple tree with a few fruits
 
 #include <Sai2Graphics.h>
 #include <GLFW/glfw3.h> //must be loaded after loading opengl/glew
@@ -334,7 +334,7 @@ void updateHaptics(
 	Vector3d cherry_acc;
 
 	// spline dynamics variables
-	double ks = 3.0*1e4;
+	double ks = 5.0*1e6;
 	double b = 0.05;
 	MatrixXd Jv_cherry, Jv_haptic;
 	MatrixXd Jlp;
@@ -540,7 +540,7 @@ void updateHaptics(
 			uint branch_index = tree->branchIndex(branch_ptr->_name);
 			// compute dq
 			spline_ptr->splineProjectionLengthJacobian(Jlp, 0.5);
-			double ks_spline = ks*pow(spline_ptr->_radius, 2);
+			double ks_spline = ks*pow(spline_ptr->_radius, 4);
 			gamma_springs.segment<2>(2*branch_index) = -ks_spline*Jlp.transpose()*spline_ptr->splineProjectionLength(0.5);
 		}
 
