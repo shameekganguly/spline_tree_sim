@@ -4,7 +4,9 @@
 #include <GLFW/glfw3.h> //must be loaded after loading opengl/glew
 #include "TreeKinematic.h"
 #include "TreeVisual.h"
+#include "SplineContact.h"
 #include "timer/LoopTimer.h"
+#include "LCPSolver.h"
 
 #include <Eigen/Core>
 #include <iostream>
@@ -67,6 +69,24 @@ int main(int argc, char** argv) {
 	auto spline = trunk_br->spline();
 	spline->_length = 0.9; spline->_radius = 0.07;
 
+	// // test rotation matrix partial derivatives
+	// Matrix3d ralp, rbeta;
+	// double temp_alp, temp_beta, temp_length;
+	// temp_alp = spline->_alpha;
+	// temp_beta = spline->_beta;
+	// temp_length = spline->_length;
+	// spline->_length = 1.0;
+	// spline->_alpha = M_PI/10.0;
+	// spline->_beta = M_PI/10.0;
+	// spline->splinedRotdq(ralp, rbeta, 0.732);
+	// cout << "Ralp" << endl;
+	// cout << ralp << endl;
+	// cout << "Rbeta" << endl;
+	// cout << rbeta << endl;
+	// spline->_length = temp_length;
+	// spline->_alpha = temp_alp;
+	// spline->_beta = temp_beta;
+
 	// add a branch
 	auto branch1 = tree->branchIs("branch-1", tree->trunk(), 0.0);
 	ChildBranchInfo info;
@@ -109,7 +129,7 @@ int main(int argc, char** argv) {
 
 	// inspect Jacobian to cherry
 	MatrixXd cherry_Jv;
-	tree->jacobianLinear(cherry_Jv, branch1->_name, s_cherry);
+	tree->jacobianLinear(cherry_Jv, branch1->_name, SplinePointCartesian(s_cherry, 0.0, 0.0));
 	cout << "Cherry Jacobian: " << endl;
 	cout << cherry_Jv << endl;
 	cout << "Branch 0: " << tree->branchAtIndex(0) << endl;
@@ -191,9 +211,7 @@ int main(int argc, char** argv) {
 		hapticDevice->open();
 		hapticDevice->calibrate();
 		fHapticDeviceEnabled = true;
-		// if the device has a gripper, enable the gripper to simulate a user switch
-	    hapticDevice->setEnableGripperUserSwitch(true);
-	    graphics->_world->addChild(cursor);
+		graphics->_world->addChild(cursor);
 	    graphics->_world->addChild(haptic_force_line);
 	}
 
@@ -316,13 +334,13 @@ void updateHaptics(
 	Vector3d cherry_acc;
 
 	// spline dynamics variables
-	double ks = 10000.0;
+	double ks = 3.0*1e4;
 	double b = 0.05;
 	MatrixXd Jv_cherry, Jv_haptic;
 	MatrixXd Jlp;
 	VectorXd dq(2);
 	Vector3d F_cherry;
-	VectorXd gamma_cherry(tree->dof());
+	VectorXd gamma_cherry(tree->dof()), gamma_springs(tree->dof()), gamma_tree(tree->dof());
 	string cherry_branch_name;
 	FruitInfo cherry_info;
 	TreeKinematic::FruitList::iterator fruit_itr;
@@ -332,15 +350,50 @@ void updateHaptics(
 	TreeKinematic::FruitList fallen_cherries;
 	map<string, Vector3d> falling_cherry_vels;
 
+	// contact dynamics
+	vector<ContactInfo> contact_list;
+	MatrixXd J_cs, N;
+	MatrixXd J_spline_contact_point;
+	VectorXd F_contact, v_contact;
+	VectorXd cc;
+	MatrixXd CM;
+	LCPSolver contact_solver;
+
 	// haptics device
-	cVector3d position;
+	bool use_gripper_switch = false; // required for devices with a gripper
+	double haptic_gripper_switch_thresh;
+	double gripper_force;
+	auto specs = hapticDevice->getSpecifications();
+	cDeltaDevicePtr delta_ptr;
+	if (specs.m_sensedGripper) {
+		// device is a delta
+		delta_ptr = dynamic_pointer_cast<cDeltaDevice>(hapticDevice);
+		if (delta_ptr != NULL) {
+			use_gripper_switch = true;
+		}
+		haptic_gripper_switch_thresh = specs.m_gripperMaxAngleRad/10.0;
+		gripper_force = specs.m_maxGripperForce/10.0;
+	}
+	cVector3d raw_position;
+	Vector3d device_position, proxy_position;
 	const double scale_factor = 80.0;
 	Vector3d home_pos(-0.25, 0.0, 1.5);
-	Vector3d F_haptic;
+	Vector3d F_haptic, F_proxy, F_proxy_contact;
 	double cursor_distance;
 	Vector3d last_dir;
-	const double haptic_kp = 1.5;
+	const double haptic_fruit_kp = 1.5;
+	const double proxy_kp = 3.0; // much larger than the fruit kp
+	const double proxy_b = 0.003;
 	const double haptic_force_scale = 9.0;
+	// - initialize cursor and device positions
+	if (fHapticDeviceEnabled) {
+		// haptics updates
+		hapticDevice->getPosition(raw_position);
+		device_position = raw_position.eigen()*scale_factor + home_pos;
+		// proxy initially aligned with haptic device
+		proxy_position = device_position;
+		cursor->setLocalPos(proxy_position);
+	}
 
 	bool carrying_cherry = false;
 	string closest_cherry_name;
@@ -360,10 +413,16 @@ void updateHaptics(
 
 		if (fHapticDeviceEnabled) {
 			// haptics updates
-	        hapticDevice->getPosition(position);
-	        cursor->setLocalPos(position*scale_factor + home_pos);
+	        hapticDevice->getPosition(raw_position);
+	        device_position = raw_position.eigen()*scale_factor + home_pos;
 
-	        hapticDevice->getUserSwitch(0, fHapticSwitchPressed);
+	        if (use_gripper_switch){
+	        	double angle;
+	        	delta_ptr->getGripperAngleRad(angle);
+	        	fHapticSwitchPressed = angle < haptic_gripper_switch_thresh;
+	        } else {
+	        	hapticDevice->getUserSwitch(0, fHapticSwitchPressed);
+	        }
 
 	        if (fHapticSwitchPressed) {
 	        	if (!carrying_cherry) {
@@ -394,7 +453,7 @@ void updateHaptics(
 
 				// compute forces
 				if (cherry_still_on_plant) {
-					F_haptic = haptic_kp * (haptic_force_line->m_pointB - haptic_force_line->m_pointA).eigen();
+					F_haptic = haptic_fruit_kp * (haptic_force_line->m_pointB - haptic_force_line->m_pointA).eigen();
 				} else {
 					F_haptic.setZero();
 					F_haptic[2] = 9.8*haptic_cherry->mass();
@@ -449,9 +508,13 @@ void updateHaptics(
 		}
 		/* --- CHERRY DYNAMICS END ---*/
 
+		/* --- HAPTICS PROXY FORCE --- */
+		F_proxy = proxy_kp*(device_position - proxy_position);
+
 		/* --- TREE DYNAMICS BEG ---*/
+
+		// - loop over fruits
 		gamma_cherry.setZero();
-		// loop over fruits
 		for (fruit_itr=tree->fruitsItrBegin(); fruit_itr!=tree->fruitsItrEnd(); ++fruit_itr) {
 			cherry = fruit_itr->second;
 			cherry_branch_name = tree->fruitParentBranch(fruit_itr->first);
@@ -463,12 +526,13 @@ void updateHaptics(
 				F_cherry += F_haptic;
 			}
 
-			tree->jacobianLinear(Jv_cherry, cherry_branch_name, s_cherry);
+			tree->jacobianLinear(Jv_cherry, cherry_branch_name, SplinePointCartesian(s_cherry, 0.0, 0.0));
 			gamma_cherry += Jv_cherry.transpose()*F_cherry;
 		}
-
 		// cout << "Gamma cherry" << gamma_cherry.transpose() << endl;
-		// loop over all branches
+
+		// - loop over all branches
+		gamma_springs.setZero();
 		for (branch_itr=tree->branchesItrBegin(); branch_itr!=tree->branchesItrEnd(); ++branch_itr) {
 			branch_ptr = branch_itr->second;
 			spline_ptr = branch_ptr->spline();
@@ -477,16 +541,78 @@ void updateHaptics(
 			// compute dq
 			spline_ptr->splineProjectionLengthJacobian(Jlp, 0.5);
 			double ks_spline = ks*pow(spline_ptr->_radius, 2);
-			dq[0] = -Jlp(0,0)*ks_spline/b*spline_ptr->splineProjectionLength(0.5) + gamma_cherry[2*branch_index + 0]/b;
-			dq[1] = -Jlp(0,1)*ks_spline/b*spline_ptr->splineProjectionLength(0.5) + gamma_cherry[2*branch_index + 1]/b;
+			gamma_springs.segment<2>(2*branch_index) = -ks_spline*Jlp.transpose()*spline_ptr->splineProjectionLength(0.5);
+		}
+
+		// - sum fruit and branch spring forces
+		gamma_tree = gamma_cherry + gamma_springs;
+
+		// - resolve quasi-static contact
+		detectCollisionTreeSphere(contact_list, tree, cursor->getLocalPos().eigen(), 2.0*cursor->getRadius());
+
+		if (contact_list.empty()) {
+			F_proxy_contact.setZero();
+		} else {
+			// solve simultaneously for the velocities of the splines and the cursor
+			// - size the contact matrices
+			J_cs.setZero(contact_list.size(), tree->dof());
+			N.setZero(contact_list.size(), 3);
+
+			// - form the relative velocity Jacobian at the contact points
+			// NOTE: positive relative velocity along the normal indicates separation
+			for (uint ind=0; ind < contact_list.size(); ++ind) {
+				auto contact_info = contact_list[ind];
+				// contact_info.print();
+				// get linear velocity Jacobian from spline
+				tree->jacobianLinear(J_spline_contact_point, contact_info.branch_name, contact_info.point_in_branch);
+				J_cs.row(ind) << -contact_info.normal.transpose() * J_spline_contact_point;
+				N.row(ind) << contact_info.normal.transpose();
+			}
+
+			// - get the projected dynamics co-efficients
+			// v_contact = cc + CM*F_contact
+			cc = N*(F_proxy - F_haptic)/proxy_b + J_cs*gamma_tree/b;
+			CM = N*N.transpose()/proxy_b + J_cs*J_cs.transpose()/b;
+
+			// cout << "cc: " << cc.transpose() << endl;
+			// cout << "CM: " << endl;
+			// cout << CM << endl;
+			// - solve the LCP in the contact co-ordinates with the dynamics above
+			contact_solver.solve(v_contact, F_contact, CM, cc);
+			// cout << "Solved LCP: " << v_contact.transpose() << " " << F_contact.transpose() << endl;
+			F_proxy_contact = N.transpose()*F_contact;
+			gamma_tree += J_cs.transpose()*F_contact;
+		}
+
+		// - update splines branches
+		for (branch_itr=tree->branchesItrBegin(); branch_itr!=tree->branchesItrEnd(); ++branch_itr) {
+			branch_ptr = branch_itr->second;
+			spline_ptr = branch_ptr->spline();
+			// get index in gamma
+			uint branch_index = tree->branchIndex(branch_ptr->_name);
+			dq[0] = gamma_tree[2*branch_index + 0]/b;
+			dq[1] = gamma_tree[2*branch_index + 1]/b;
 			spline_ptr->_alpha += dq[0]*loop_dt;
 			spline_ptr->_beta += dq[1]*loop_dt;
-		}
+		}		
 		/* --- TREE DYNAMICS END ---*/
 
+		// - update haptic proxy point
+		Vector3d proxy_vel = 1.0/proxy_b * (F_proxy - F_haptic + F_proxy_contact);
+		proxy_position += proxy_vel*loop_dt;
+
+		// TODO: inspect relative velocity in different contact directions
+		for (uint ind=0; ind < contact_list.size(); ++ind) {
+			auto contact_info = contact_list[ind];
+			// TODO: fill
+		}
+
+		// update haptic force and cursor position with contact force on proxy
 		if (fHapticDeviceEnabled) {
+			// update cursor visual
+			cursor->setLocalPos(proxy_position);
 			// apply haptics forces
-			hapticDevice->setForceAndTorqueAndGripperForce(-cVector3d(F_haptic)*haptic_force_scale, Vector3d(0.0, 0.0, 0.0), 0.0);
+			hapticDevice->setForceAndTorqueAndGripperForce(-cVector3d(F_proxy)*haptic_force_scale, Vector3d(0.0, 0.0, 0.0), gripper_force);
 		}
 
 		// -------------------------------------------
