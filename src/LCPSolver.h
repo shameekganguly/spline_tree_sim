@@ -49,7 +49,7 @@ public:
 	void initialize();
 
 	// solveInternal. called after initialization is complete
-	void solveInternal();
+	void solveInternal(const double tol=1e-3);
 
 	// drive-to-zero
 	void driveToZero(uint ind_d, const double tol=1e-3);

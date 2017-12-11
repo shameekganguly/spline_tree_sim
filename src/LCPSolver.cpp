@@ -3,6 +3,9 @@
 #include <Eigen/Cholesky>
 #include <stdexcept>
 
+// #include <iostream>
+// using namespace std;
+
 void LCPSolver::solve(Eigen::VectorXd& ret_a, Eigen::VectorXd& ret_f, const Eigen::MatrixXd& A, const Eigen::VectorXd& b) {
 	// set size and check if less than our limit
 	_size = b.rows();
@@ -23,9 +26,11 @@ void LCPSolver::solve(Eigen::VectorXd& ret_a, Eigen::VectorXd& ret_f, const Eige
 	// solve
 	solveInternal();
 
-	// copy return values
-	ret_a = _a.head(_size);
-	ret_f = _f.head(_size);
+	// copy return values with correct indexing
+	for (uint i=0; i<_size; ++i) {
+		ret_a[_order_map[i]] = _a[i];
+		ret_f[_order_map[i]] = _f[i];
+	}
 }
 
 // ----- internal functions -----
@@ -52,7 +57,7 @@ void LCPSolver::initialize() {
 }
 
 // internal solve function
-void LCPSolver::solveInternal() {
+void LCPSolver::solveInternal(const double tol) {
 	double max_pen_acc;
 	while (true) {
 		if (_size-_count_C-_count_NC == 0) {
@@ -61,8 +66,8 @@ void LCPSolver::solveInternal() {
 		}
 		LCPVectorIndex index;
 		max_pen_acc = _a.segment(_count_C+_count_NC, _size-_count_C-_count_NC).minCoeff(&index);
-		if(max_pen_acc < 0) {
-			driveToZero(index);
+		if(max_pen_acc < -tol) {
+			driveToZero(index + _count_C + _count_NC, tol);
 		} else {
 			// already the LCP conditions are satisfied
 			break;
