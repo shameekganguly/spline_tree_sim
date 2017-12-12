@@ -80,3 +80,4 @@ set (BINARY_DIR ${PROJECT_SOURCE_DIR}/bin)
 
 add_subdirectory(01-branch)
 add_subdirectory(02-simple_tree)
+add_subdirectory(03-bare_tree)
