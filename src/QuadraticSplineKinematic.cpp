@@ -250,6 +250,9 @@ double QuadraticSplineKinematic::splineCurvature() const {
 // compute curvature Jacobian
 void QuadraticSplineKinematic::splineCurvatureJacobian(Eigen::MatrixXd& ret_matrix) const {
 	ret_matrix.setZero(1,2);
+	if (fabs(_alpha) < 1e-3 && fabs(_beta) < 1e-3) {
+		return;
+	}
 	ret_matrix(0,0) = dgam_dalp()/_length;
 	ret_matrix(0,1) = dgam_dbeta()/_length;
 }
