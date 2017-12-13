@@ -27,6 +27,18 @@ def dgam_dalp(psi, alp, beta):
 def dgam_dbeta(psi, alp, beta):
 	return -2.0*dpsi_dbeta(psi, alp, beta)
 
+def rhodrho_dalp(alp, beta):
+	l = 1.0
+	psi = np.arcsin(np.cos(alp)*np.cos(beta))
+	gam = np.pi - 2.0*psi
+	return 1.0/l*dgam_dalp(psi, alp, beta)*gam/l
+
+def rhodrho_dbeta(alp, beta):
+	l = 1.0
+	psi = np.arcsin(np.cos(alp)*np.cos(beta))
+	gam = np.pi - 2.0*psi
+	return 1.0/l*dgam_dbeta(psi, alp, beta)*gam/l
+
 def px_dalp(s, alp, beta):
 	l = 1.0
 	psi = np.arcsin(np.cos(alp)*np.cos(beta))
@@ -341,7 +353,8 @@ grad = np.zeros((20,20))
 for i in range(20):
 	for j in range(20):
 		# grad[i,j] = lp_beta(0.5, alp[i], beta[j])
-		grad[i,j] = closest_s_from_point(alp[i], beta[j], np.array([-0.0, 0.0, 0.6]))
+		# grad[i,j] = closest_s_from_point(alp[i], beta[j], np.array([-0.0, 0.0, 0.6]))
+		grad[i,j] = rhodrho_dbeta(alp[i], beta[j])
 
 plt.imshow(grad, cmap='hot', interpolation='nearest')
 plt.colorbar()
