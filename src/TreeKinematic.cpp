@@ -181,7 +181,7 @@ void TreeKinematic::transformInTree(Eigen::Affine3d& ret_trans, const std::strin
 
 		// find parent
 		if (br_name_local.compare(trunk()) != 0) {
-			const auto it = _parent_map.find(branch_name);
+			const auto it = _parent_map.find(br_name_local);
 			parent_name = it->second;
 		} else {
 			parent_name = "";
@@ -276,7 +276,7 @@ void TreeKinematic::jacobianLinear(MatrixXd& ret_mat, const std::string& branch_
 
 		// find parent
 		if (br_name_local.compare(trunk()) != 0) {
-			const auto it = _parent_map.find(branch_name);
+			const auto it = _parent_map.find(br_name_local);
 			parent_name = it->second;
 		} else {
 			parent_name = "";
