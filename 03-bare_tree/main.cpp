@@ -19,7 +19,7 @@ using namespace std;
 using namespace Eigen;
 using namespace chai3d;
 
-const string tree_file = "resources/03-bare_tree/small_tree.xml";
+const string tree_file = "resources/03-bare_tree/large_tree.xml";
 const string world_file = "resources/03-bare_tree/world.urdf";
 const string camera_name = "camera_front";
 
