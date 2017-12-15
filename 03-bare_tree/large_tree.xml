@@ -33,7 +33,7 @@
 	</branch>
 
 	<branch name="A1B1">
-		<parent name="A1" s="1.9" orientation="0.866 0.0 0.0 -0.5"/>
+		<parent name="A1" s="1.7" orientation="0.866 0.0 0.0 -0.5"/>
 		<spline length="1.2" radius="0.10"/>
 	</branch>
 
@@ -44,7 +44,32 @@
 
 	<branch name="A1B1A1A1">
 		<parent name="A1B1A1" s="0.6" orientation="0.9513 0.1677 0.0449 -0.2549"/>
-		<spline length="0.6" radius="0.04"/>
+		<spline length="1.0" radius="0.04"/>
+	</branch>
+
+	<branch name="A1B1A1A1A1">
+		<parent name="A1B1A1A1" s="0.97" xzx_deg="-20 -120 0"/>
+		<spline length="0.3" radius="0.032"/>
+	</branch>
+
+	<branch name="A1B1A1A1A2">
+		<parent name="A1B1A1A1A1" s="0.3" xzx_deg="60 50 0"/>
+		<spline length="0.4" radius="0.026"/>
+	</branch>
+
+	<branch name="A1B1A1A1A3">
+		<parent name="A1B1A1A1A2" s="0.4" xzx_deg="-60 50 0"/>
+		<spline length="0.65" radius="0.02"/>
+	</branch>
+
+	<branch name="A1B1A1A1B1">
+		<parent name="A1B1A1A1" s="0.85" xzx_deg="-50 -65 0"/>
+		<spline length="0.4" radius="0.034"/>
+	</branch>
+
+	<branch name="A1B1A1A1B1A1">
+		<parent name="A1B1A1A1B1" s="0.37" xzx_deg="50 90 0"/>
+		<spline length="0.5" radius="0.024"/>
 	</branch>
 
 	<branch name="A1B1A2">
@@ -58,7 +83,7 @@
 	</branch>
 
 	<branch name="A1B1B1">
-		<parent name="A1B1" s="1.2" orientation="0.75 0.4330 0.25 -0.4330"/>
+		<parent name="A1B1" s="1.2" xzx_deg="0 -25 0"/>
 		<spline length="0.5" radius="0.065"/>
 	</branch>
 
@@ -87,29 +112,446 @@
 		<spline length="1.0" radius="0.04"/>
 	</branch>
 
+	<branch name="A1B1D1">
+		<parent name="A1B1" s="1.1" xzx_deg="60 -55 0"/>
+		<spline length="0.8" radius="0.045"/>
+	</branch>
+
+	<branch name="A1B1D1A1">
+		<parent name="A1B1D1" s="0.5" xzx_deg="90 -55 0"/>
+		<spline length="1.1" radius="0.035"/>
+	</branch>
+
+	<branch name="A1B1D1B1">
+		<parent name="A1B1D1" s="0.75" xzx_deg="-10 -70 0"/>
+		<spline length="0.4" radius="0.04"/>
+	</branch>
+
+	<branch name="A1B1D1B2">
+		<parent name="A1B1D1B1" s="0.4" xzx_deg="90 -50 0"/>
+		<spline length="1.1" radius="0.03"/>
+	</branch>
+
+	<branch name="A1B1D2">
+		<parent name="A1B1D1" s="0.8" xzx_deg="0 15 0"/>
+		<spline length="0.8" radius="0.032"/>
+	</branch>
+
+	<branch name="A1B1D3">
+		<parent name="A1B1D2" s="0.8" xzx_deg="90 25 0"/>
+		<spline length="0.9" radius="0.025"/>
+	</branch>
+
 	<branch name="A1C1">
-		<parent name="A1" s="2.3" orientation="0.866 0.0 0.0 0.5"/>
-		<spline length="1.7" radius="0.10"/>
+		<parent name="A1" s="2.25" xzx_deg="20 60 0"/>
+		<spline length="0.45" radius="0.10"/>
 	</branch>
 
-	<branch name="A1C1A1">
-		<parent name="A1C1" s="0.8" orientation="0.8616 0.0 0.0 0.5075"/>
-		<spline length="1.4" radius="0.065"/>
+	<branch name="A1C2">
+		<parent name="A1C1" s="0.35" xzx_deg="45 -20 0"/>
+		<spline length="1.25" radius="0.09"/>
 	</branch>
 
-	<branch name="A1C1B1">
-		<parent name="A1C1" s="1.05" orientation="0.8485 -0.1496 0.0881 0.4998"/>
-		<spline length="1.4" radius="0.04"/>
+	<branch name="A1C2A1">
+		<parent name="A1C2" s="0.8" orientation="0.8616 0.0 0.0 0.5075"/>
+		<spline length="1.5" radius="0.065"/>
+	</branch>
+
+	<branch name="A1C2A2">
+		<parent name="A1C2A1" s="1.5" xzx_deg="0 0 0"/>
+		<spline length="0.4" radius="0.055"/>
+	</branch>
+
+	<branch name="A1C2A3">
+		<parent name="A1C2A2" s="0.4" xzx_deg="-20 -25 0"/>
+		<spline length="0.4" radius="0.045"/>
+	</branch>
+
+	<branch name="A1C2A4">
+		<parent name="A1C2A3" s="0.4" xzx_deg="0 0 0"/>
+		<spline length="0.4" radius="0.045"/>
+	</branch>
+
+	<branch name="A1C2A3A1">
+		<parent name="A1C2A3" s="0.4" xzx_deg="-80 80 0"/>
+		<spline length="0.4" radius="0.04"/>
+	</branch>
+
+	<branch name="A1C2A3A2">
+		<parent name="A1C2A3A1" s="0.4" xzx_deg="-70 -70 0"/>
+		<spline length="0.5" radius="0.03"/>
+	</branch>
+
+	<branch name="A1C2A4A1">
+		<parent name="A1C2A4" s="0.37" xzx_deg="0 -55 0"/>
+		<spline length="0.4" radius="0.035"/>
+	</branch>
+
+	<branch name="A1C2A4B1">
+		<parent name="A1C2A4" s="0.39" xzx_deg="20 45 0"/>
+		<spline length="0.35" radius="0.03"/>
+	</branch>
+
+	<branch name="A1C2A1A1">
+		<parent name="A1C2A1" s="1.5" xzx_deg="20 75 0"/>
+		<spline length="0.3" radius="0.045"/>
+	</branch>
+
+	<branch name="A1C2A1A1A1">
+		<parent name="A1C2A1A1" s="0.3" xzx_deg="0 60 0"/>
+		<spline length="0.5" radius="0.035"/>
+	</branch>
+
+	<branch name="A1C2A1A1A2">
+		<parent name="A1C2A1A1A1" s="0.5" xzx_deg="0 10 0"/>
+		<spline length="0.7" radius="0.03"/>
+	</branch>
+
+	<branch name="A1C2B1">
+		<parent name="A1C2" s="1.15" xzx_deg="-90 60 0"/>
+		<spline length="1.2" radius="0.045"/>
+	</branch>
+
+	<branch name="A1C2B1B1">
+		<parent name="A1C2B1" s="1.2" xzx_deg="80 -25 0"/>
+		<spline length="0.35" radius="0.035"/>
+	</branch>
+
+	<branch name="A1C2B1C1">
+		<parent name="A1C2B1" s="1.15" xzx_deg="-80 145 0"/>
+		<spline length="0.5" radius="0.026"/>
+	</branch>
+
+	<branch name="A1C2B1C2">
+		<parent name="A1C2B1C1" s="0.5" xzx_deg="-120 -30 0"/>
+		<spline length="0.4" radius="0.022"/>
+	</branch>
+
+	<branch name="A1C3">
+		<parent name="A1C2" s="1.25" xzx_deg="160 25 0"/>
+		<spline length="0.9" radius="0.07"/>
+	</branch>
+
+	<branch name="A1C3A1">
+		<parent name="A1C3" s="0.9" xzx_deg="0 -60 0"/>
+		<spline length="0.6" radius="0.06"/>
+	</branch>
+
+	<branch name="A1C4">
+		<parent name="A1C3" s="0.9" xzx_deg="0 15 0"/>
+		<spline length="1.5" radius="0.06"/>
+	</branch>
+
+	<branch name="A1C4A1">
+		<parent name="A1C4" s="0.25" xzx_deg="-100 -70 0"/>
+		<spline length="0.5" radius="0.03"/>
+	</branch>
+
+	<branch name="A1C4B1">
+		<parent name="A1C4" s="1.4" xzx_deg="-20 -60 0"/>
+		<spline length="0.6" radius="0.045"/>
 	</branch>
 
 	<branch name="A1D1">
-		<parent name="A1" s="2.3" orientation="0.6532 0.2706 0.2706 -0.6532"/>
-		<spline length="0.8" radius="0.08"/>
+		<parent name="A1" s="2.2" xzx_deg="50 -65 0"/>
+		<spline length="0.6" radius="0.08"/>
+	</branch>
+
+	<branch name="A1D1A1">
+		<parent name="A1D1" s="0.56" xzx_deg="-90 45 0"/>
+		<spline length="0.4" radius="0.05"/>
+	</branch>
+
+	<branch name="A1D1A2">
+		<parent name="A1D1A1" s="0.4" xzx_deg="-80 -10 0"/>
+		<spline length="0.8" radius="0.04"/>
+	</branch>
+
+	<branch name="A1D1A3">
+		<parent name="A1D1A2" s="0.8" xzx_deg="0 -10 0"/>
+		<spline length="0.85" radius="0.03"/>
+	</branch>
+
+	<branch name="A1D1A1A1">
+		<parent name="A1D1A1" s="0.4" xzx_deg="-25 75 0"/>
+		<spline length="0.75" radius="0.03"/>
+	</branch>
+
+	<branch name="A1D1A1A1A1">
+		<parent name="A1D1A1A1" s="0.75" xzx_deg="-90 45 0"/>
+		<spline length="0.2" radius="0.03"/>
+	</branch>
+
+	<branch name="A1D1A1A1A1A1">
+		<parent name="A1D1A1A1A1" s="0.2" xzx_deg="90 -40 0"/>
+		<spline length="0.4" radius="0.02"/>
+	</branch>
+
+	<branch name="A1D1B1">
+		<parent name="A1D1" s="0.6" xzx_deg="0 -35 0"/>
+		<spline length="0.55" radius="0.07"/>
+	</branch>
+
+	<branch name="A1D1B1A1">
+		<parent name="A1D1B1" s="0.32" xzx_deg="0 35 0"/>
+		<spline length="0.8" radius="0.055"/>
+	</branch>
+
+	<branch name="A1D1B1A1A1">
+		<parent name="A1D1B1A1" s="0.76" xzx_deg="0 -50 0"/>
+		<spline length="0.7" radius="0.04"/>
+	</branch>
+
+	<branch name="A1D1B1A1A2">
+		<parent name="A1D1B1A1A1" s="0.7" xzx_deg="0 20 0"/>
+		<spline length="0.8" radius="0.03"/>
+	</branch>
+
+	<branch name="A1D1B1A1A2A1">
+		<parent name="A1D1B1A1A2" s="0.8" xzx_deg="-45 -80 0"/>
+		<spline length="0.4" radius="0.03"/>
+	</branch>
+
+	<branch name="A1D1B1A1A3">
+		<parent name="A1D1B1A1A2" s="0.7" xzx_deg="0 0 0"/>
+		<spline length="0.35" radius="0.022"/>
+	</branch>
+
+	<branch name="A1D1B2">
+		<parent name="A1D1B1" s="0.55" xzx_deg="20 -40 0"/>
+		<spline length="0.25" radius="0.065"/>
+	</branch>
+
+	<branch name="A1D1B3">
+		<parent name="A1D1B2" s="0.25" xzx_deg="0 35 0"/>
+		<spline length="0.8" radius="0.04"/>
+	</branch>
+
+	<branch name="A1D1B4">
+		<parent name="A1D1B3" s="0.8" xzx_deg="0 20 0"/>
+		<spline length="0.8" radius="0.03"/>
+	</branch>
+
+	<branch name="A1D1B2A1">
+		<parent name="A1D1B2" s="0.15" xzx_deg="20 65 0"/>
+		<spline length="0.75" radius="0.035"/>
+	</branch>
+
+	<branch name="A1D1B2A2">
+		<parent name="A1D1B2A1" s="0.75" xzx_deg="0 5 0"/>
+		<spline length="0.7" radius="0.035"/>
+	</branch>
+
+	<branch name="A1E1">
+		<parent name="A1" s="2.2" xzx_deg="110 55 0"/>
+		<spline length="0.9" radius="0.1"/>
+	</branch>
+
+	<branch name="A1E2">
+		<parent name="A1E1" s="0.9" xzx_deg="0 0 0"/>
+		<spline length="0.7" radius="0.09"/>
+	</branch>
+
+	<branch name="A1E2A1">
+		<parent name="A1E2" s="0.62" xzx_deg="65 -75 0"/>
+		<spline length="0.8" radius="0.065"/>
+	</branch>
+
+	<branch name="A1E2A1A1">
+		<parent name="A1E2A1" s="0.8" xzx_deg="30 -45 0"/>
+		<spline length="1.0" radius="0.04"/>
+	</branch>
+
+	<branch name="A1E2A1A1A1">
+		<parent name="A1E2A1A1" s="0.8" xzx_deg="45 -60 0"/>
+		<spline length="0.35" radius="0.035"/>
+	</branch>
+
+	<branch name="A1E2A1A1A2">
+		<parent name="A1E2A1A1A1" s="0.35" xzx_deg="-10 -45 0"/>
+		<spline length="0.35" radius="0.03"/>
+	</branch>
+
+	<branch name="A1E2A1A2">
+		<parent name="A1E2A1A1" s="1.0" xzx_deg="20 30 0"/>
+		<spline length="0.9" radius="0.03"/>
+	</branch>
+
+	<branch name="A1E2A1B1">
+		<parent name="A1E2A1" s="0.8" xzx_deg="0 -10 -70"/>
+		<spline length="0.65" radius="0.067"/>
+	</branch>
+
+	<branch name="A1E2A1B2">
+		<parent name="A1E2A1B1" s="0.65" xzx_deg="0 -45 0"/>
+		<spline length="0.7" radius="0.04"/>
+	</branch>
+
+	<branch name="A1E2A1B3">
+		<parent name="A1E2A1B2" s="0.7" xzx_deg="0 0 0"/>
+		<spline length="0.4" radius="0.025"/>
+	</branch>
+
+	<branch name="A1E2A1B1A1">
+		<parent name="A1E2A1B1" s="0.65" xzx_deg="60 -95 0"/>
+		<spline length="0.8" radius="0.03"/>
+	</branch>
+
+	<branch name="A1E2A1B1A2">
+		<parent name="A1E2A1B1A1" s="0.8" xzx_deg="20 -15 0"/>
+		<spline length="0.5" radius="0.022"/>
+	</branch>
+
+	<branch name="A1E2B1">
+		<parent name="A1E2" s="0.7" xzx_deg="10 -30 0"/>
+		<spline length="0.4" radius="0.065"/>
+	</branch>
+
+	<branch name="A1E2B2">
+		<parent name="A1E2B1" s="0.4" xzx_deg="-10 -40 0"/>
+		<spline length="0.7" radius="0.055"/>
+	</branch>
+
+	<branch name="A1E2B3">
+		<parent name="A1E2B2" s="0.7" xzx_deg="-10 -30 0"/>
+		<spline length="0.9" radius="0.035"/>
+	</branch>
+
+	<branch name="A1E2B1A1">
+		<parent name="A1E2B1" s="0.36" xzx_deg="0 50 0"/>
+		<spline length="0.8" radius="0.055"/>
+	</branch>
+
+	<branch name="A1E2B1A2">
+		<parent name="A1E2B1A1" s="0.8" xzx_deg="0 0 0"/>
+		<spline length="0.7" radius="0.035"/>
+	</branch>
+
+	<branch name="A1E2C1">
+		<parent name="A1E2" s="0.7" xzx_deg="-20 50 0"/>
+		<spline length="0.6" radius="0.06"/>
+	</branch>
+
+	<branch name="A1E2C2">
+		<parent name="A1E2C1" s="0.6" xzx_deg="20 -30 0"/>
+		<spline length="0.7" radius="0.045"/>
+	</branch>
+
+	<branch name="A1E2C1A1">
+		<parent name="A1E2C1" s="0.6" xzx_deg="100 -60 0"/>
+		<spline length="0.7" radius="0.035"/>
+	</branch>
+
+	<branch name="A1E2C1A1A1">
+		<parent name="A1E2C1A1" s="0.25" xzx_deg="-70 90 0"/>
+		<spline length="0.5" radius="0.022"/>
+	</branch>
+
+	<branch name="A1F1">
+		<parent name="A1" s="1.4" xzx_deg="-40 -65 0"/>
+		<spline length="0.4" radius="0.08"/>
+	</branch>
+
+	<branch name="A1F2">
+		<parent name="A1F1" s="0.4" xzx_deg="0 55 0"/>
+		<spline length="0.9" radius="0.06"/>
+	</branch>
+
+	<branch name="A1F3">
+		<parent name="A1F2" s="0.9" xzx_deg="45 25 0"/>
+		<spline length="0.8" radius="0.05"/>
 	</branch>
 
 	<branch name="A2">
-		<parent name="A1" s="2.3" orientation="0.9513 -0.1677 -0.0449 -0.2549"/>
-		<spline length="0.75" radius="0.15"/>
+		<parent name="A1" s="2.3" xzx_deg="-40 -20 0"/>
+		<spline length="0.8" radius="0.12"/>
 	</branch>
 
+	<branch name="A2A1">
+		<parent name="A2" s="0.75" xzx_deg="-30 75 0"/>
+		<spline length="1.6" radius="0.05"/>
+	</branch>
+
+	<branch name="A2A2">
+		<parent name="A2A1" s="1.5" xzx_deg="10 30 0"/>
+		<spline length="0.6" radius="0.045"/>
+	</branch>
+
+	<branch name="A2B1">
+		<parent name="A2" s="0.78" xzx_deg="10 45 0"/>
+		<spline length="1.6" radius="0.05"/>
+	</branch>
+
+	<branch name="A2C1">
+		<parent name="A2" s="0.79" xzx_deg="55 25 0"/>
+		<spline length="0.5" radius="0.07"/>
+	</branch>
+
+	<branch name="A2C2">
+		<parent name="A2C1" s="0.5" xzx_deg="100 15 0"/>
+		<spline length="0.8" radius="0.04"/>
+	</branch>
+
+	<branch name="A2D1">
+		<parent name="A2" s="0.76" xzx_deg="-90 10 0"/>
+		<spline length="1.0" radius="0.055"/>
+	</branch>
+
+	<branch name="A2D2">
+		<parent name="A2D1" s="1.0" xzx_deg="0 0 0"/>
+		<spline length="0.8" radius="0.035"/>
+	</branch>
+
+	<branch name="A2E1">
+		<parent name="A2" s="0.78" xzx_deg="180 15 0"/>
+		<spline length="0.9" radius="0.05"/>
+	</branch>
+
+	<branch name="A2F1">
+		<parent name="A2" s="0.25" xzx_deg="90 80 0"/>
+		<spline length="0.45" radius="0.085"/>
+	</branch>
+
+	<branch name="A2F2">
+		<parent name="A2F1" s="0.45" xzx_deg="-80 75 0"/>
+		<spline length="0.35" radius="0.075"/>
+	</branch>
+
+	<branch name="A2F3">
+		<parent name="A2F2" s="0.35" xzx_deg="90 -60 0"/>
+		<spline length="0.9" radius="0.055"/>
+	</branch>
+
+	<branch name="A2F4">
+		<parent name="A2F3" s="0.9" xzx_deg="120 -20 0"/>
+		<spline length="1.1" radius="0.035"/>
+	</branch>
+
+<!-- 	<fruit name="orange1" radius="0.11">
+		<parent name="A1B1A1A1" s="0.6"/>
+	</fruit>
+
+	<fruit name="orange3" radius="0.08">
+		<parent name="A1A1A2" s="1.3"/>
+	</fruit>
+
+	<fruit name="orange4" radius="0.13">
+		<parent name="A1A1B2" s="1.3"/>
+	</fruit>
+
+	<fruit name="orange5" radius="0.11">
+		<parent name="A1B1A3" s="0.8"/>
+	</fruit>
+
+	<fruit name="orange6" radius="0.09">
+		<parent name="A1B1C2" s="1.0"/>
+	</fruit>
+
+	<fruit name="orange7" radius="0.075">
+		<parent name="A1B1B1B1" s="1.2"/>
+	</fruit>
+
+	<fruit name="orange8" radius="0.088">
+		<parent name="A1B1B1A2" s="0.9"/>
+	</fruit> -->
 </tree>
