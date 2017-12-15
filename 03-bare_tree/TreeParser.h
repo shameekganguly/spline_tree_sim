@@ -260,6 +260,21 @@ public:
 		return ret_qtn;
 	}
 
+	Eigen::Quaterniond parseEulerXZXDeg (const std::string& orientation_string) {
+		Eigen::Vector3d temp_vec;
+		std::stringstream ss(orientation_string);
+		std::string item;
+		uint i = 0;
+		while (std::getline(ss, item, ' ')) {
+			if (i > 2) { throw(std::runtime_error("Malformed Euler XZX string.")); }
+			temp_vec[i++] = std::stod(item);
+		}
+		Eigen::Quaterniond ret_qtn = Eigen::AngleAxisd(temp_vec[0]*M_PI/180.0, Eigen::Vector3d::UnitX()) *
+										Eigen::AngleAxisd(temp_vec[1]*M_PI/180.0, Eigen::Vector3d::UnitZ()) *
+										Eigen::AngleAxisd(temp_vec[2]*M_PI/180.0, Eigen::Vector3d::UnitX());
+		return ret_qtn;
+	}
+
 	TrunkString parseTrunk (tinyxml2::XMLElement* trunk_element) {
 		TrunkString ret_trunk;
 		tinyxml2::XMLElement *spline_elem = trunk_element->FirstChildElement("spline");
@@ -345,16 +360,32 @@ public:
 			if (!s_string) { throw(std::runtime_error("Parent must have a -s- attribute.")); }
 			ret_parent.s = std::stod(s_string);
 		}
-		// parse optional orientation
+		// parse optional orientation in quaternion
+		bool f_quaternion_specified = false;
 		{
 			const char *ori_string = parent_element->Attribute("orientation");
 			if (!ori_string) {
 				ret_parent.f_orientation_assigned = false;
 			} else {
 				ret_parent.f_orientation_assigned = true;
+				f_quaternion_specified = true;
 				ret_parent.orientation = parseOrientation(ori_string);
 			}
 		}
+		// parse optional orientation in euler xzx.
+		{
+			const char *ori_string = parent_element->Attribute("xzx_deg");
+			if (!ori_string && !f_quaternion_specified) {
+				ret_parent.f_orientation_assigned = false;
+			} else if (ori_string && f_quaternion_specified) {
+				throw(std::runtime_error("Both quaternion and euler angles specified."));
+			}
+			else if (ori_string && !f_quaternion_specified) {
+				ret_parent.f_orientation_assigned = true;
+				ret_parent.orientation = parseEulerXZXDeg(ori_string);
+			}
+		}
+
 		return ret_parent;
 	}
 };
