@@ -70,8 +70,8 @@ int main(int argc, char** argv) {
 
 	// change material for branches and fruits
 	auto branch_material = cMaterial::create();
-	branch_material->m_diffuse = cColorf(0.3, 0.15, 0.1);
-	branch_material->m_ambient = cColorf(0.1, 0.06, 0.0);
+	branch_material->m_diffuse = cColorf(0.77, 0.75, 0.62);
+	branch_material->m_ambient = cColorf(0.04, 0.01, 0.01);
 	branch_material->m_specular = cColorf(0.0, 0.05, 0.05);
 	branch_material->setShininess(100);
 	tree_visual->branchMaterialIs(branch_material);
@@ -257,8 +257,9 @@ void updateHaptics(
 	Vector3d cherry_acc;
 
 	// spline dynamics variables
-	double ks = 5.0*1e6;
-	double b = 0.05;
+	cout << "Tree has " << tree->dof()/2 << " branches." << endl;
+	double ks = 6.0*1e4;
+	double b = 1.00;
 	MatrixXd Jv_cherry, Jv_haptic;
 	MatrixXd Jlp;
 	VectorXd dq(2);
@@ -462,9 +463,9 @@ void updateHaptics(
 			// get index in gamma
 			uint branch_index = tree->branchIndex(branch_ptr->_name);
 			// compute dq
-			spline_ptr->splineProjectionLengthJacobian(Jlp, 0.5);
+			spline_ptr->splineCurvatureJacobian(Jlp);
 			double ks_spline = ks*pow(spline_ptr->_radius, 4);
-			gamma_springs.segment<2>(2*branch_index) = -ks_spline*Jlp.transpose()*spline_ptr->splineProjectionLength(0.5);
+			gamma_springs.segment<2>(2*branch_index) = -ks_spline*Jlp.transpose()*spline_ptr->splineCurvature();
 		}
 
 		// - sum fruit and branch spring forces
