@@ -37,6 +37,9 @@ public:
 	// dtor
 	virtual ~QuadraticSplineKinematic();
 
+	// get radius of the spline at location along the spline
+	virtual double radius(double s) const;
+
 	// get the local position of a point given the deformation coordinates in polar form
 	virtual void deformedLocation(Eigen::Vector3d& ret_vector, const SplinePointPolar& point) const;
 

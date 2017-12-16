@@ -22,6 +22,28 @@ QuadraticSplineKinematic::~QuadraticSplineKinematic() {
 	// nothing to do
 }
 
+// get radius of the spline at location along the spline
+double QuadraticSplineKinematic::radius(double s) const {
+	if (s < (0-_radius-1e-10) || s > (_length+_radius+1e-10)) { throw(std::runtime_error("splineLocation: Passed value of s is out of bounds.")); }
+	if (s < 0.0) {
+		double ret_rad_sqr = _radius*_radius - s*s;
+		if (ret_rad_sqr < 1e-10) {
+			return 0.0;
+		} else {
+			return sqrt(ret_rad_sqr);
+		}
+	}
+	if (s > _length) {
+		double ret_rad_sqr = _radius*_radius - (s-_length)*(s-_length);
+		if (ret_rad_sqr < 1e-10) {
+			return 0.0;
+		} else {
+			return sqrt(ret_rad_sqr);
+		}
+	}
+	return _radius;
+}
+
 // compute position on spline
 void QuadraticSplineKinematic::splineLocation(Eigen::Vector3d& ret_vector, double s) const {
 	// check for correct ranges
