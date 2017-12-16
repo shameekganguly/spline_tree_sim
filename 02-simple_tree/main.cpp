@@ -499,9 +499,9 @@ void updateHaptics(
 				falling_cherry_vels[fallen_fruit_itr.first] += cherry_acc*0.01;
 				cherry_pos_global += falling_cherry_vels[fallen_fruit_itr.first]*0.01;
 				// clamp to ground
-				double cherry_min_height_ground = 0.0;
-				if (cherry_pos_global[2] < cherry_min_height_ground) {
-					cherry_pos_global[2] = cherry_min_height_ground;
+				double cherry_min_height_ground = 0.1;
+				if (cherry_pos_global[2] < cherry_min_height_ground+cherry->radius()) {
+					cherry_pos_global[2] = cherry_min_height_ground+cherry->radius();
 				}
 				cherry->graphic()->setLocalPos(cherry_pos_global);
 			}
