@@ -63,7 +63,7 @@
 	<camera name="camera_front">
 		<position xyz="4.0 0.0 1.6" />
 		<vertical xyz="0.0 0.0 1.0" />
-		<lookat xyz="0.0 0.0 2.0" />
+		<lookat xyz="0.0 0.0 0.5" />
 	</camera>
 	<camera name="camera_top">
 		<position xyz="2.0 0.0 3.0" />
