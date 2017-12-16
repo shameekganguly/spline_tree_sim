@@ -472,7 +472,9 @@ void updateHaptics(
 		gamma_tree = gamma_cherry + gamma_springs;
 
 		// - resolve quasi-static contact
-		detectCollisionTreeSphere(contact_list, tree, cursor->getLocalPos().eigen(), 2.0*cursor->getRadius());
+		if (fHapticDeviceEnabled){
+			detectCollisionTreeSphere(contact_list, tree, cursor->getLocalPos().eigen(), 2.0*cursor->getRadius());
+		}
 
 		if (contact_list.empty()) {
 			F_proxy_contact.setZero();
