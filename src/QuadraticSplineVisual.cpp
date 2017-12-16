@@ -14,7 +14,7 @@ QuadraticSplineVisual::QuadraticSplineVisual(QuadraticSplineKinematic* spline_ki
 	_kinematic = spline_kinematic;
 
 	// default values
-	_nv_longitudinal = 8;
+	_nv_longitudinal = 12;
 	_nv_plane = 20;
 
 	// default material
@@ -65,7 +65,12 @@ void QuadraticSplineVisual::render(cRenderOptions& a_options)
 
             // compute spacing parameters
             double _ds_longitudinal = _kinematic->_length/(_nv_longitudinal-1);
+            double _ds_longitudinal_cap = _ds_longitudinal/3.0;
 			double _ds_angle = 2.0*M_PI/_nv_plane;
+
+            uint nv_endcap_offset = max((uint)10, uint(_kinematic->_radius/_ds_longitudinal_cap) + (uint)1);
+            _ds_longitudinal_cap = _kinematic->_radius/(nv_endcap_offset - 1);
+            uint nv_long_wendcaps = _nv_longitudinal + nv_endcap_offset*2;
 
             Vector3d point1, point2, point3, point4;
             //^ NOTE: point 1 and point 2 lie on the current plane
@@ -74,27 +79,49 @@ void QuadraticSplineVisual::render(cRenderOptions& a_options)
             // point 2 and 4 lie on the next angle
             Vector3d normal1, normal2;
             SplinePointPolar spoint;
-            for (uint i = 0; i < (_nv_longitudinal-1); i++) {
-            	for (uint j = 0; j < (_nv_plane); j++) {
-            		// i = index of current cross section plane
-            		// j = index of current vertex along the plane
+            double s_i, s_ip1, t_i, t_ip1;
+            // cout << "_ds_longitudinal " << _ds_longitudinal << " _ds_longitudinal_cap: " << _ds_longitudinal_cap << endl;
+            // cout << "_nv_longitudinal " << _nv_longitudinal << " nv_endcap_offset: " << nv_endcap_offset << " nv_long_wendcaps: " << nv_long_wendcaps << endl;
+            for (uint i = 0; i < (nv_long_wendcaps-1); i++) {
+                // i = index of current cross section plane
+                    // j = index of current vertex along the plane
+                    if (i < nv_endcap_offset) {
+                        s_i = ((double)i)*_ds_longitudinal_cap - _kinematic->_radius;
+                    } else if (i > (nv_endcap_offset + _nv_longitudinal - 1)) {
+                        s_i = ((double)(i - nv_endcap_offset - _nv_longitudinal))*_ds_longitudinal_cap + _kinematic->_length;
+                    } else {
+                        s_i = ((double)(i - nv_endcap_offset))*_ds_longitudinal;
+                    }
+                    if (i+1 < nv_endcap_offset) {
+                        s_ip1 = ((double)i+1)*_ds_longitudinal_cap - _kinematic->_radius;
+                    } else if (i+1 > (nv_endcap_offset + _nv_longitudinal - 1)) {
+                        s_ip1 = ((double)(i+1 - nv_endcap_offset - _nv_longitudinal))*_ds_longitudinal_cap + _kinematic->_length;
+                    } else {
+                        s_ip1 = ((double)(i+1 - nv_endcap_offset))*_ds_longitudinal;
+                    }
+                    s_ip1 = min(s_ip1, _kinematic->_length + _kinematic->_radius);
 
+                    // cout << "i: " << i << " s_i: " << s_i << " s_ip1 " << s_ip1 << endl;
+                    t_i = _kinematic->radius(s_i);
+                    t_ip1 = _kinematic->radius(s_ip1);
+
+            	for (uint j = 0; j < (_nv_plane); j++) {
             		// get spatial locations of the four corners in the local
             		// frame. t != 0, eta = 0 => on the y-axis
-                    spoint = SplinePointPolar(/* s */((double)i)*_ds_longitudinal, /* t */ _kinematic->_radius, /* eta */ ((double)j)*_ds_angle);
+                    spoint = SplinePointPolar(/* s */s_i, /* t */ t_i, /* eta */ ((double)j)*_ds_angle);
             		_kinematic->deformedLocation(point1, spoint);
-                    spoint = SplinePointPolar(/* s */((double)i+1)*_ds_longitudinal, /* t */ _kinematic->_radius, /* eta */ ((double)j)*_ds_angle);
+                    spoint = SplinePointPolar(/* s */s_ip1, /* t */ t_ip1, /* eta */ ((double)j)*_ds_angle);
 					_kinematic->deformedLocation(point3, spoint);
             		if (j == (_nv_plane - 1)) {
             			// wrap around. so point 2 and 4 are on zero angle again
-                        spoint = SplinePointPolar(/* s */((double)i)*_ds_longitudinal, /* t */ _kinematic->_radius, /* eta */ 0.0);
+                        spoint = SplinePointPolar(/* s */s_i, /* t */ t_i, /* eta */ 0.0);
 						_kinematic->deformedLocation(point2, spoint);
-                        spoint = SplinePointPolar(/* s */((double)i+1)*_ds_longitudinal, /* t */ _kinematic->_radius, /* eta */ 0.0);
+                        spoint = SplinePointPolar(/* s */s_ip1, /* t */ t_ip1, /* eta */ 0.0);
 						_kinematic->deformedLocation(point4, spoint);
             		} else {
-                        spoint = SplinePointPolar(/* s */((double)i)*_ds_longitudinal, /* t */ _kinematic->_radius, /* eta */ ((double)j+1)*_ds_angle);
+                        spoint = SplinePointPolar(/* s */s_i, /* t */ t_i, /* eta */ ((double)j+1)*_ds_angle);
 						_kinematic->deformedLocation(point2, spoint);
-                        spoint = SplinePointPolar(/* s */((double)i+1)*_ds_longitudinal, /* t */ _kinematic->_radius, /* eta */ ((double)j+1)*_ds_angle);
+                        spoint = SplinePointPolar(/* s */s_ip1, /* t */ t_ip1, /* eta */ ((double)j+1)*_ds_angle);
 						_kinematic->deformedLocation(point4, spoint);
             		}
 
