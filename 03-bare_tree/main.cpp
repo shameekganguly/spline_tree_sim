@@ -326,6 +326,13 @@ void updateHaptics(
 	Fruit* haptic_cherry;
 	Vector3d closest_cherry_pos;
 
+	bool pulling_branch = false;
+	string closest_cursor_branch_name;
+	SplinePointCartesian closest_cursor_point;
+	Vector3d closest_cursor_point_world;
+	BranchKinematic* closest_cursor_branch;
+	MatrixXd J_branch_pull;
+
 	// start simulation loop
 	fSimulationRunning = true;
 	while (fSimulationRunning) { //automatically set to false when simulation is quit
@@ -349,7 +356,7 @@ void updateHaptics(
 	        }
 
 	        if (fHapticSwitchPressed) {
-	        	if (!carrying_cherry) {
+				if (!carrying_cherry && !pulling_branch) {
 	        		cherry_still_on_plant = true;
 					// update cursor distance to closest fruit on tree
 					closest_cherry_name = getClosestFruitToPoint(tree, cursor->getLocalPos().eigen());
@@ -364,13 +371,28 @@ void updateHaptics(
 						// cout << "Cursor distance " << cursor_distance << endl;
 						if (cursor_distance > (haptic_cherry->radius()*1.0 + cursor->getRadius())) {
 							fHapticSwitchPressed = false;
+						} else {
+							carrying_cherry = true;
+						}
+					}
+					if (!carrying_cherry) {
+						// check if close to any branch
+						CursorDistanceInfo cursor_dist_info = getClosestBranchToPoint(tree, cursor->getLocalPos().eigen());
+						auto branch_ptr = tree->branch(cursor_dist_info.branch_name);
+						if (cursor_dist_info.distance > (branch_ptr->spline()->_radius*1.1 + cursor->getRadius()*1.5)) {
+							fHapticSwitchPressed = false;
+						} else {
+							fHapticSwitchPressed = true;
+							pulling_branch = true;
+							closest_cursor_point = cursor_dist_info.point_in_branch;
+							closest_cursor_branch_name = cursor_dist_info.branch_name;
+							closest_cursor_branch = tree->branch(closest_cursor_branch_name);
 						}
 					}
 	        	}
 	        }
 
-	        if(fHapticSwitchPressed) {
-	        	carrying_cherry = true;
+	        if(fHapticSwitchPressed && carrying_cherry) {
 				haptic_force_line->m_pointA = haptic_cherry->graphic()->getLocalPos();
 				haptic_force_line->m_pointB = cursor->getLocalPos();
 				haptic_force_line->setShowEnabled(true);
@@ -384,17 +406,27 @@ void updateHaptics(
 				}
 	        }
 
+	        if(fHapticSwitchPressed && pulling_branch) {
+				tree->positionInWorld(closest_cursor_point_world, closest_cursor_branch_name, closest_cursor_point.s);
+				haptic_force_line->m_pointA = closest_cursor_point_world;
+				haptic_force_line->m_pointB = cursor->getLocalPos();
+				haptic_force_line->setShowEnabled(true);
+
+				F_haptic = haptic_fruit_kp * (haptic_force_line->m_pointB - haptic_force_line->m_pointA).eigen();
+	        }
+
 			if (!fHapticSwitchPressed) {
 				F_haptic.setZero();
 				haptic_force_line->setShowEnabled(false);
 				carrying_cherry = false;
+				pulling_branch = false;
 	        }
 		} else {
 			F_haptic.setZero();
 		}
 
 		/* --- CHERRY DYNAMICS BEG ---*/
-		if (F_haptic.norm() > cherry_pluck_force_thresh) {
+		if (carrying_cherry && cherry_still_on_plant && F_haptic.norm() > cherry_pluck_force_thresh) {
 			// remove cherry from plant and add it to tree
 			tree->positionInWorld(closest_cherry_pos, closest_cherry_branch_name, closest_cherry_info.s);
 			tree->fruitRem(haptic_cherry->_name);
@@ -462,7 +494,7 @@ void updateHaptics(
 			spline_ptr = branch_ptr->spline();
 			// get index in gamma
 			uint branch_index = tree->branchIndex(branch_ptr->_name);
-			// compute dq
+			// compute spring force
 			spline_ptr->splineCurvatureJacobian(Jlp);
 			double ks_spline = ks*pow(spline_ptr->_radius, 4);
 			gamma_springs.segment<2>(2*branch_index) = -ks_spline*Jlp.transpose()*spline_ptr->splineCurvature();
@@ -470,6 +502,12 @@ void updateHaptics(
 
 		// - sum fruit and branch spring forces
 		gamma_tree = gamma_cherry + gamma_springs;
+
+		// compute haptic force on branch
+		if (pulling_branch) {
+			tree->jacobianLinear(J_branch_pull, closest_cursor_branch_name, SplinePointCartesian(closest_cursor_point.s, 0, 0));
+			gamma_tree += J_branch_pull.transpose() * F_haptic;
+		}
 
 		// - resolve quasi-static contact
 		if (fHapticDeviceEnabled){
