@@ -28,10 +28,17 @@ struct SplineString {
 	double radius;
 };
 
+struct DynamicString {
+	double ks; bool f_ks_assigned;
+	double bs; bool f_bs_assigned;
+	Eigen::Vector3d home_axis;
+};
+
 struct BranchString {
 	std::string name;
 	ParentString parent;
 	SplineString spline;
+	DynamicString dynamic; bool f_dynamic_assigned;
 };
 
 struct FruitString {
@@ -199,6 +206,15 @@ public:
 				// update branch spline info
 				branch_ptr->spline()->_length = bmap_itr->second.spline.length;
 				branch_ptr->spline()->_radius = bmap_itr->second.spline.radius;
+				// update branch spline dynamic info if specified
+				if (bmap_itr->second.f_dynamic_assigned) {
+					DynamicString dyn_str = bmap_itr->second.dynamic;
+					branch_ptr->splineDynamic()->_home_axis = dyn_str.home_axis;
+					if (dyn_str.f_ks_assigned) { branch_ptr->splineDynamic()->_ks = dyn_str.ks; }
+					if (dyn_str.f_bs_assigned) { branch_ptr->splineDynamic()->_bs = dyn_str.bs; }
+					// TODO: also update the home position for the kinematic spline
+					// TODO: consider a separate tag for the home position for the kinematic spline
+				}
 				// move iterator and add to added branches
 				branches_added.insert(branch_ptr->_name);
 				++bmap_itr;
@@ -300,6 +316,39 @@ public:
 		return ret_spline;
 	}
 
+	DynamicString parseDynamic (tinyxml2::XMLElement* dynamic_element) {
+		DynamicString ret_dynamic;
+		// parse home axis from euler xzx deg. note that the last value is ignored
+		// as we only parse the X axis of the resulting frame
+		{
+			const char *home_str = dynamic_element->Attribute("xzx_deg");
+			if(!home_str) { throw(std::runtime_error("Missing home axis definition.")); }
+			Eigen::Quaterniond qtn = parseEulerXZXDeg (home_str);
+			ret_dynamic.home_axis = qtn.toRotationMatrix().col(0);
+		}
+		// parse (optional) stiffness parameter ks
+		{
+			const char *ks_str = dynamic_element->Attribute("ks");
+			if(!ks_str) {
+				ret_dynamic.f_ks_assigned = false;
+			} else {
+				ret_dynamic.f_ks_assigned = true;
+				ret_dynamic.ks = std::stod(ks_str);
+			}
+		}
+		// parse (optional) damping parameter bs
+		{
+			const char *bs_str = dynamic_element->Attribute("bs");
+			if(!bs_str) {
+				ret_dynamic.f_bs_assigned = false;
+			} else {
+				ret_dynamic.f_bs_assigned = true;
+				ret_dynamic.bs = std::stod(bs_str);
+			}
+		}
+		return ret_dynamic;
+	}
+
 	BranchString parseBranch (tinyxml2::XMLElement* branch_element) {
 		BranchString ret_branch;
 
@@ -318,6 +367,16 @@ public:
 		// parse spline
 		tinyxml2::XMLElement *spline_elem = branch_element->FirstChildElement("spline");
 		if(NULL == spline_elem) { throw(std::runtime_error("Spline not specified.")); }
+		ret_branch.spline = parseSpline(spline_elem);
+
+		// parse optional dynamic
+		tinyxml2::XMLElement *dynamic_elem = branch_element->FirstChildElement("dynamic");
+		if(NULL == dynamic_elem) {
+			ret_branch.f_dynamic_assigned = false;
+		} else {
+			ret_branch.f_dynamic_assigned = true;
+			ret_branch.dynamic = parseDynamic(dynamic_elem);
+		}
 		ret_branch.spline = parseSpline(spline_elem);
 
 		return ret_branch;
