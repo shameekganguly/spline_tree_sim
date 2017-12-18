@@ -37,6 +37,19 @@ public:
 	// dtor
 	virtual ~QuadraticSplineKinematic();
 
+	// dof
+	static uint dof() {
+		return 2;
+	}
+
+	// get the current configuration
+	// returns the configuration vector for the spline. is of size dof()
+	void qVec(Eigen::VectorXd& ret_vec) const {
+		 ret_vec.setZero(dof());
+		 ret_vec[0] = _alpha;
+		 ret_vec[1] = _beta;
+	}
+
 	// get radius of the spline at location along the spline
 	virtual double radius(double s) const;
 
