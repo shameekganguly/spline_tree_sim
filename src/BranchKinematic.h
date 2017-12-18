@@ -5,6 +5,7 @@
 #define BRANCH_KINEMATIC_H
 
 #include "QuadraticSplineKinematic.h"
+#include "QuadraticSplineDynamic.h"
 #include "QuadraticSplineVisual.h"
 #include "Fruit.h"
 
@@ -63,12 +64,14 @@ public:
 	{
 		_spline = new QuadraticSplineKinematic();
 		_visual = new QuadraticSplineVisual(_spline);
+		_dynamic = new QuadraticSplineDynamic(_spline);
 	}
 
 	// dtor
 	virtual ~BranchKinematic() {
 		delete _spline;
 		delete _visual;
+		delete _dynamic;
 	}
 
 	/* ---- Member access/augment ---- */
@@ -172,9 +175,19 @@ public:
 		return _visual;
 	}
 
-	// get spline kinematic const
+	// get spline visual const
 	const QuadraticSplineVisual* splineVisual() const {
 		return _visual;
+	}
+
+	// get spline dynamic
+	QuadraticSplineDynamic* splineDynamic() {
+		return _dynamic;
+	}
+
+	// get spline dynamic const
+	const QuadraticSplineDynamic* splineDynamic() const {
+		return _dynamic;
 	}
 
 	// data members
@@ -193,6 +206,9 @@ public:
 
 	// (visual) spline associated with this branch
 	QuadraticSplineVisual* _visual;
+
+	// (dynamic) spline associated with this branch
+	QuadraticSplineDynamic* _dynamic;
 };
 
 #endif //BRANCH_KINEMATIC_H

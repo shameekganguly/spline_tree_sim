@@ -5,6 +5,7 @@
 #include <GLFW/glfw3.h> //must be loaded after loading opengl/glew
 #include "TreeParser.h"
 #include "TreeKinematic.h"
+#include "QuadraticSplineDynamic.h"
 #include "TreeVisual.h"
 #include "SplineContact.h"
 #include "timer/LoopTimer.h"
@@ -258,8 +259,8 @@ void updateHaptics(
 
 	// spline dynamics variables
 	cout << "Tree has " << tree->dof()/2 << " branches." << endl;
-	double ks = 6.0*1e4;
-	double b = 1.00;
+	// double ks = 6.0*1e4;
+	// double b = 1.00;
 	MatrixXd Jv_cherry, Jv_haptic;
 	MatrixXd Jlp;
 	VectorXd dq(2);
@@ -271,8 +272,12 @@ void updateHaptics(
 	TreeKinematic::BranchList::iterator branch_itr;
 	BranchKinematic* branch_ptr;
 	QuadraticSplineKinematic* spline_ptr;
+	QuadraticSplineDynamic* spline_dyn_ptr;
 	TreeKinematic::FruitList fallen_cherries;
 	map<string, Vector3d> falling_cherry_vels;
+	VectorXd branch_spring_force;
+	VectorXd tree_inv_b_vec(tree->dof());
+	DiagonalMatrix<double, -1> tree_inv_b_mat(tree->dof());
 
 	// contact dynamics
 	vector<ContactInfo> contact_list;
@@ -491,14 +496,17 @@ void updateHaptics(
 		gamma_springs.setZero();
 		for (branch_itr=tree->branchesItrBegin(); branch_itr!=tree->branchesItrEnd(); ++branch_itr) {
 			branch_ptr = branch_itr->second;
-			spline_ptr = branch_ptr->spline();
+			spline_dyn_ptr = branch_ptr->splineDynamic();
 			// get index in gamma
 			uint branch_index = tree->branchIndex(branch_ptr->_name);
 			// compute spring force
-			spline_ptr->splineCurvatureJacobian(Jlp);
-			double ks_spline = ks*pow(spline_ptr->_radius, 4);
-			gamma_springs.segment<2>(2*branch_index) = -ks_spline*Jlp.transpose()*spline_ptr->splineCurvature();
+			spline_dyn_ptr->springForce(branch_spring_force);
+			gamma_springs.segment<2>(2*branch_index) = branch_spring_force;
+
+			// update tree b_vec
+			tree_inv_b_vec.segment<2>(2*branch_index) = (1.0/spline_dyn_ptr->_bs)*Vector2d::Ones();
 		}
+		tree_inv_b_mat.diagonal() = tree_inv_b_vec;
 
 		// - sum fruit and branch spring forces
 		gamma_tree = gamma_cherry + gamma_springs;
@@ -535,8 +543,8 @@ void updateHaptics(
 
 			// - get the projected dynamics co-efficients
 			// v_contact = cc + CM*F_contact
-			cc = N*(F_proxy - F_haptic)/proxy_b + J_cs*gamma_tree/b;
-			CM = N*N.transpose()/proxy_b + J_cs*J_cs.transpose()/b;
+			cc = N*(F_proxy - F_haptic)/proxy_b + tree_inv_b_mat*J_cs*gamma_tree;
+			CM = N*N.transpose()/proxy_b + tree_inv_b_mat*J_cs*J_cs.transpose();
 
 			// cout << "cc: " << cc.transpose() << endl;
 			// cout << "CM: " << endl;
@@ -552,10 +560,11 @@ void updateHaptics(
 		for (branch_itr=tree->branchesItrBegin(); branch_itr!=tree->branchesItrEnd(); ++branch_itr) {
 			branch_ptr = branch_itr->second;
 			spline_ptr = branch_ptr->spline();
+			spline_dyn_ptr = branch_ptr->splineDynamic();
 			// get index in gamma
 			uint branch_index = tree->branchIndex(branch_ptr->_name);
-			dq[0] = gamma_tree[2*branch_index + 0]/b;
-			dq[1] = gamma_tree[2*branch_index + 1]/b;
+			dq[0] = gamma_tree[2*branch_index + 0]/spline_dyn_ptr->_bs;
+			dq[1] = gamma_tree[2*branch_index + 1]/spline_dyn_ptr->_bs;
 			spline_ptr->_alpha += dq[0]*loop_dt;
 			spline_ptr->_beta += dq[1]*loop_dt;
 		}		
