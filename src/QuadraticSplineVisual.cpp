@@ -9,7 +9,7 @@ using namespace chai3d;
 using namespace Eigen;
 
 // ctor
-QuadraticSplineVisual::QuadraticSplineVisual(QuadraticSplineKinematic* spline_kinematic)
+QuadraticSplineVisual::QuadraticSplineVisual(const QuadraticSplineKinematic* spline_kinematic)
 {
 	_kinematic = spline_kinematic;
 

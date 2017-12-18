@@ -16,7 +16,7 @@ class QuadraticSplineVisual: public chai3d::cGenericObject {
 // public member functions
 public:
 	// ctor
-	QuadraticSplineVisual(QuadraticSplineKinematic* spline_kinematic);
+	QuadraticSplineVisual(const QuadraticSplineKinematic* spline_kinematic);
 
 	// dtor
 	virtual ~QuadraticSplineVisual();
@@ -34,7 +34,7 @@ private:
 // we need to have these parameters be in bounded ranges.
 public:
 	// ptr to kinematic info
-	QuadraticSplineKinematic* _kinematic;
+	const QuadraticSplineKinematic* _kinematic;
 
 public:
 	/* ---- Graphic info ----*/
