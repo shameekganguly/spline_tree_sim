@@ -21,6 +21,17 @@ chai3d::cCamera *Graphics::CreateCamera(std::string_view name) {
   return camera;
 }
 
+void Graphics::CreateLight(const chai3d::cVector3d &pos,
+                           const chai3d::cVector3d &look_at) {
+  auto *light = new chai3d::cDirectionalLight(chai3d_world_.get());
+  light->setLocalPos(pos);
+  chai3d_world_->addChild(light);
+
+  light->setEnabled(true);
+  chai3d::cVector3d direction = look_at - pos;
+  light->setDir(direction.x(), direction.y(), direction.z());
+}
+
 void Graphics::SetBackgroundColor(const std::vector<double> &rgb) {
   assert(rgb.size() == 3);
   chai3d_world_->setBackgroundColor(rgb[0], rgb[1], rgb[2]);

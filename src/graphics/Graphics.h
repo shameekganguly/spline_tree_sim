@@ -10,10 +10,18 @@ namespace spline_sim {
 class Graphics {
 public:
   Graphics() : chai3d_world_(std::make_unique<chai3d::cWorld>()) {}
+
   bool AddOwning(chai3d::cGenericObject *object);
+
   chai3d::cCamera *CreateCamera(std::string_view name);
+
+  void CreateLight(const chai3d::cVector3d &pos,
+                   const chai3d::cVector3d &look_at);
+
   void SetBackgroundColor(const std::vector<double> &rgb);
+
   void UpdateShadowMaps(bool update);
+
   void Render(std::string_view camera_name, int width, int height);
 
 protected:

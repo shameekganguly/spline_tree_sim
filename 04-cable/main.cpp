@@ -44,6 +44,12 @@ const std::string kCameraName = "camera";
 int main(int argc, char **argv) {
   auto graphics = std::make_unique<spline_sim::Graphics>();
 
+  // Add lights
+  graphics->CreateLight(/*pos=*/cVector3d(3, -3, 3),
+                        /*look_at=*/cVector3d(0, 0, 2));
+  graphics->CreateLight(/*pos=*/cVector3d(3, 3, 3),
+                        /*look_at=*/cVector3d(0, 0, 2));
+
   // initialize a chai camera
   cCamera *camera = graphics->CreateCamera(kCameraName);
 
