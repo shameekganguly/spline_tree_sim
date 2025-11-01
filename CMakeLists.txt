@@ -1,7 +1,7 @@
 
-cmake_minimum_required (VERSION 2.8.12)
+cmake_minimum_required (VERSION 3.10.0)
 project (TREE_SIM)
-SET(CMAKE_CXX_FLAGS "-std=c++11 -I/usr/include -I/usr/local/include")
+SET(CMAKE_CXX_FLAGS "-std=c++14 -I/usr/include -I/usr/local/include -Wno-deprecated-declarations")
 
 # set common source
 set (COMMON_SOURCE
@@ -9,16 +9,12 @@ set (COMMON_SOURCE
 	${PROJECT_SOURCE_DIR}/src/QuadraticSplineKinematic.cpp
 	${PROJECT_SOURCE_DIR}/src/TreeKinematic.cpp
 	${PROJECT_SOURCE_DIR}/src/LCPSolver.cpp
+	${PROJECT_SOURCE_DIR}/src/graphics/Graphics.cc
 	# ${PROJECT_SOURCE_DIR}/src/timer/LoopTimer.h
 	# ${PROJECT_SOURCE_DIR}/src/force_sensor/ForceSensorSim.h
 	# ${PROJECT_SOURCE_DIR}/src/force_sensor/ForceSensorDisplay.h
 	)
 include_directories(${PROJECT_SOURCE_DIR}/src)
-
-# # set common dependencies
-# # - eigen3 # must be loaded before chai to avoid a conflict between the system Eigen and the Chai eigen.
-# find_package(Eigen3 REQUIRED)
-# include_directories(${EIGEN3_INCLUDE_DIR})
 
 # - CHAI3D
 find_package(CHAI3D REQUIRED)
@@ -31,42 +27,12 @@ elseif (CMAKE_SYSTEM_NAME MATCHES Linux)
 endif () #NOTE: Windows is currently unsupported
 link_directories(${CHAI3D_LIBRARY_DIRS})
 
-# - SAI2-SIMULATION. TODO: this should not be needed. something fishy.
-# find_package(SAI2-SIMULATION REQUIRED)
-# include_directories(${SAI2-SIMULATION_INCLUDE_DIRS})
-# add_definitions(${SAI2-SIMULATION_DEFINITIONS})
-
-# - SAI2-COMMON
-# find_package(SAI2-COMMON REQUIRED)
-# include_directories(${SAI2-COMMON_INCLUDE_DIRS})
-# add_definitions(${SAI2-COMMON_DEFINITIONS})
-
-# - SAI2-URDF
-find_package(SAI2-URDF REQUIRED)
-include_directories(${SAI2-URDF_INCLUDE_DIRS})
-add_definitions(${SAI2-URDF_DEFINITIONS})
-
-# - SAI2-MODEL
-find_package(SAI2-MODEL REQUIRED)
-include_directories(${SAI2-MODEL_INCLUDE_DIRS})
-add_definitions(${SAI2-MODEL_DEFINITIONS})
-
-# - SAI2-GRAPHICS
-find_package(SAI2-GRAPHICS REQUIRED)
-include_directories(${SAI2-GRAPHICS_INCLUDE_DIRS})
-add_definitions(${SAI2-GRAPHICS_DEFINITIONS})
-
 # - glfw3
 find_package(glfw3 QUIET)
 find_library(GLFW_LIBRARY glfw)
 
 set(COMMON_LIBRARIES
 	${CHAI3D_LIBRARIES}
-	# ${SAI2-COMMON_LIBRARIES}
-	${SAI2-MODEL_LIBRARIES}
-	${SAI2-URDF_LIBRARIES}
-	${SAI2-GRAPHICS_LIBRARIES}
-	# ${HIREDIS_LIBRARY}
 	${GLFW_LIBRARY}
 	)
 
@@ -78,6 +44,7 @@ set (CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE        ${PROJECT_SOURCE_DIR}/bin)
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${PROJECT_SOURCE_DIR}/bin)
 set (BINARY_DIR ${PROJECT_SOURCE_DIR}/bin)
 
-add_subdirectory(01-branch)
-add_subdirectory(02-simple_tree)
-add_subdirectory(03-bare_tree)
+# add_subdirectory(01-branch)
+# add_subdirectory(02-simple_tree)
+# add_subdirectory(03-bare_tree)
+add_subdirectory(04-cable)
