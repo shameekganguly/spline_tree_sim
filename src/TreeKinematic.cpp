@@ -7,310 +7,357 @@ using namespace std;
 using namespace Eigen;
 
 // add branch
-BranchKinematic* TreeKinematic::branchIs(const std::string& name, const std::string& parent_name, double s) {
-	// check if branch exists already.
-	// if so, check parent
-	// if parent is correct, simply return the branch
-	// else error out
-	auto it_p = _parent_map.find(name);
-	if (it_p != _parent_map.end()) {
-		if (parent_name.compare(it_p->second) == 0) {
-			return _branches[name];
-		} else {
-			throw(std::runtime_error("Branch exists with different parent."));
-		}
-	}
+BranchKinematic *TreeKinematic::branchIs(const std::string &name,
+                                         const std::string &parent_name,
+                                         double s) {
+  // check if branch exists already.
+  // if so, check parent
+  // if parent is correct, simply return the branch
+  // else error out
+  auto it_p = _parent_map.find(name);
+  if (it_p != _parent_map.end()) {
+    if (parent_name.compare(it_p->second) == 0) {
+      return _branches[name];
+    } else {
+      throw(std::runtime_error("Branch exists with different parent."));
+    }
+  }
 
-	// check if parent exists.
-	auto it_b = _branches.find(parent_name);
-	if (it_b == _branches.end()) {
-		throw(std::runtime_error("Parent branch does not exist."));
-	}
+  // check if parent exists.
+  auto it_b = _branches.find(parent_name);
+  if (it_b == _branches.end()) {
+    throw(std::runtime_error("Parent branch does not exist."));
+  }
 
-	// check name conflict with trunk
-	if (name.compare(trunk()) == 0) {
-		throw(std::runtime_error("Cannot have same name as trunk."));
-	}
+  // check name conflict with trunk
+  if (name.compare(trunk()) == 0) {
+    throw(std::runtime_error("Cannot have same name as trunk."));
+  }
 
-	// else add branch
-	BranchKinematic* new_branch = new BranchKinematic(name);
-	// - create child branch info 
-	ChildBranchInfo info;
-	info.name = name;
-	info.s = s;
-	// - add to parent branch
-	auto parent = branch(parent_name);
-	parent->_children[name] = info;
-	// - add branch to self
-	_branches[name] = new_branch;
-	// - update parent map
-	_parent_map[name] = parent_name;
-	
-	// update branch indices
-	updateBranchIndices();
+  // else add branch
+  BranchKinematic *new_branch = new BranchKinematic(name);
+  // - create child branch info
+  ChildBranchInfo info;
+  info.name = name;
+  info.s = s;
+  // - add to parent branch
+  auto parent = branch(parent_name);
+  parent->_children[name] = info;
+  // - add branch to self
+  _branches[name] = new_branch;
+  // - update parent map
+  _parent_map[name] = parent_name;
 
-	// return created branch
-	return new_branch;
+  // update branch indices
+  updateBranchIndices();
+
+  // return created branch
+  return new_branch;
 }
 
 // remove branch
-TreeKinematic::BranchList TreeKinematic::branchRem(const std::string& name) {
-	TreeKinematic::BranchList ret_list;
-	// trunk cannot be deleted
-	if (name.compare(trunk()) == 0) {
-		throw(std::runtime_error("Trunk cannot be removed from tree without deleting it."));
-	}
-	// remove children
-	auto it = _branches.find(name);
-	if (it == _branches.end()) {
-		return ret_list;
-	}
-	for (auto it_ci: it->second->_children) {
-		string child_name = it_ci.second.name;
-		TreeKinematic::BranchList child_list = branchRem(it_ci.second.name);
-		// append removed children to return list
-		for (auto it_cb: child_list) {
-			ret_list[child_name] = it_cb.second;
-		}
-	}
-	// remove from parent
-	string parent_name = _parent_map[name];
-	auto parent_branch = _branches[parent_name];
-	parent_branch->_children.erase(name);
+TreeKinematic::BranchList TreeKinematic::branchRem(const std::string &name) {
+  TreeKinematic::BranchList ret_list;
+  // trunk cannot be deleted
+  if (name.compare(trunk()) == 0) {
+    throw(std::runtime_error(
+        "Trunk cannot be removed from tree without deleting it."));
+  }
+  // remove children
+  auto it = _branches.find(name);
+  if (it == _branches.end()) {
+    return ret_list;
+  }
+  for (auto it_ci : it->second->_children) {
+    string child_name = it_ci.second.name;
+    TreeKinematic::BranchList child_list = branchRem(it_ci.second.name);
+    // append removed children to return list
+    for (auto it_cb : child_list) {
+      ret_list[child_name] = it_cb.second;
+    }
+  }
+  // remove from parent
+  string parent_name = _parent_map[name];
+  auto parent_branch = _branches[parent_name];
+  parent_branch->_children.erase(name);
 
-	// update parent map
-	_parent_map.erase(name);
+  // update parent map
+  _parent_map.erase(name);
 
-	// update branches maps
-	ret_list[name] = it->second;
-	_branches.erase(name);
+  // update branches maps
+  ret_list[name] = it->second;
+  _branches.erase(name);
 
-	// update branch indices
-	updateBranchIndices();
+  // update branch indices
+  updateBranchIndices();
 
-	return ret_list;
+  return ret_list;
 }
 
 // add fruit
-Fruit* TreeKinematic::fruitIs(const std::string& name, const std::string& branch_name, double s) {
-	// check if fruit exists already.
-	// if so, check parent branch
-	// if parent is correct, simply return the branch
-	// else error out
-	auto it_b = _fruit_branch_map.find(name);
-	if (it_b != _fruit_branch_map.end()) {
-		if (branch_name.compare(it_b->second) == 0) {
-			return _fruits[name];
-		} else {
-			throw(std::runtime_error("Fruit exists with different parent."));
-		}
-	}
+Fruit *TreeKinematic::fruitIs(const std::string &name,
+                              const std::string &branch_name, double s) {
+  // check if fruit exists already.
+  // if so, check parent branch
+  // if parent is correct, simply return the branch
+  // else error out
+  auto it_b = _fruit_branch_map.find(name);
+  if (it_b != _fruit_branch_map.end()) {
+    if (branch_name.compare(it_b->second) == 0) {
+      return _fruits[name];
+    } else {
+      throw(std::runtime_error("Fruit exists with different parent."));
+    }
+  }
 
-	// check if parent branch exists.
-	auto it_p = _branches.find(branch_name);
-	if (it_p == _branches.end()) {
-		throw(std::runtime_error("Parent branch does not exist."));
-	}
+  // check if parent branch exists.
+  auto it_p = _branches.find(branch_name);
+  if (it_p == _branches.end()) {
+    throw(std::runtime_error("Parent branch does not exist."));
+  }
 
-	// else add fruit
-	Fruit* new_fruit = new Fruit(name);
-	// - create child branch info 
-	FruitInfo info;
-	info.name = name;
-	info.s = s;
-	// - add to parent branch
-	auto br = branch(branch_name);
-	br->_fruits[name] = info;
-	// - add branch to self
-	_fruits[name] = new_fruit;
-	// - update parent map
-	_fruit_branch_map[name] = branch_name;
-	
-	// return created branch
-	return new_fruit;
+  // else add fruit
+  Fruit *new_fruit = new Fruit(name);
+  // - create child branch info
+  FruitInfo info;
+  info.name = name;
+  info.s = s;
+  // - add to parent branch
+  auto br = branch(branch_name);
+  br->_fruits[name] = info;
+  // - add branch to self
+  _fruits[name] = new_fruit;
+  // - update parent map
+  _fruit_branch_map[name] = branch_name;
+
+  // return created branch
+  return new_fruit;
 }
 
 // remove fruit
-Fruit* TreeKinematic::fruitRem(const std::string& name) {
-	// remove from parent
-	auto it_f = _fruits.find(name);
-	if (it_f == _fruits.end()) {
-		return NULL;
-	}
-	auto br = branch(_fruit_branch_map[name]);
-	br->_fruits.erase(name);
+Fruit *TreeKinematic::fruitRem(const std::string &name) {
+  // remove from parent
+  auto it_f = _fruits.find(name);
+  if (it_f == _fruits.end()) {
+    return NULL;
+  }
+  auto br = branch(_fruit_branch_map[name]);
+  br->_fruits.erase(name);
 
-	// update parent map
-	_fruit_branch_map.erase(name);
+  // update parent map
+  _fruit_branch_map.erase(name);
 
-	// update fruits map
-	auto fruit = it_f->second;
-	_fruits.erase(name);
+  // update fruits map
+  auto fruit = it_f->second;
+  _fruits.erase(name);
 
-	// return removed fruit
-	return fruit;
+  // return removed fruit
+  return fruit;
 }
 
 // get transform in tree frame
-void TreeKinematic::transformInTree(Eigen::Affine3d& ret_trans, const std::string& branch_name, double s) const {
-	string parent_name = "";
-	ret_trans = Affine3d::Identity();
+void TreeKinematic::transformInTree(Eigen::Affine3d &ret_trans,
+                                    const std::string &branch_name,
+                                    double s) const {
+  string parent_name = "";
+  ret_trans = Affine3d::Identity();
 
-	string br_name_local = branch_name;
-	double s_local = s;
-	BranchList::const_iterator br_itr;
-	BranchList::const_iterator parent_br_itr;
-	Vector3d position;
-	Matrix3d rotation;
+  string br_name_local = branch_name;
+  double s_local = s;
+  BranchList::const_iterator br_itr;
+  BranchList::const_iterator parent_br_itr;
+  Vector3d position;
+  Matrix3d rotation;
 
-	// check if valid branch
-	br_itr = _branches.find(branch_name);
-	if (br_itr == _branches.cend()) {
-		throw(runtime_error("Unknown branch."));
-	}
+  // check if valid branch
+  br_itr = _branches.find(branch_name);
+  if (br_itr == _branches.cend()) {
+    throw(runtime_error("Unknown branch."));
+  }
 
-	// update transform
-	do {
-		// get branch
-		br_itr = _branches.find(br_name_local);
-		// get position in spline
-		br_itr->second->spline()->splineOrientation(rotation, s_local);
-		br_itr->second->spline()->splineLocation(position, s_local);
-		ret_trans.translation() = rotation*ret_trans.translation() + position;
-		ret_trans.linear() = rotation * ret_trans.linear();
+  // update transform
+  do {
+    // get branch
+    br_itr = _branches.find(br_name_local);
+    // get position in spline
+    br_itr->second->spline()->splineOrientation(rotation, s_local);
+    br_itr->second->spline()->splineLocation(position, s_local);
+    ret_trans.translation() = rotation * ret_trans.translation() + position;
+    ret_trans.linear() = rotation * ret_trans.linear();
 
-		// find parent
-		if (br_name_local.compare(trunk()) != 0) {
-			const auto it = _parent_map.find(br_name_local);
-			parent_name = it->second;
-		} else {
-			parent_name = "";
-		}
+    // find parent
+    if (br_name_local.compare(trunk()) != 0) {
+      const auto it = _parent_map.find(br_name_local);
+      parent_name = it->second;
+    } else {
+      parent_name = "";
+    }
 
-		if (!parent_name.empty()) {
-			// get parent
-			parent_br_itr = _branches.find(parent_name);
-			// get info in parent
-			ChildBranchInfo info = parent_br_itr->second->childBranchInfo(br_name_local);
-			// update rotation and position
-			ret_trans.translation() = info.rotation*ret_trans.translation();
-			ret_trans.linear() = info.rotation * ret_trans.linear();
-			// update s and br
-			br_name_local = parent_name;
-			s_local = info.s;
-		}
-	} while (!parent_name.empty());
+    if (!parent_name.empty()) {
+      // get parent
+      parent_br_itr = _branches.find(parent_name);
+      // get info in parent
+      ChildBranchInfo info =
+          parent_br_itr->second->childBranchInfo(br_name_local);
+      // update rotation and position
+      ret_trans.translation() = info.rotation * ret_trans.translation();
+      ret_trans.linear() = info.rotation * ret_trans.linear();
+      // update s and br
+      br_name_local = parent_name;
+      s_local = info.s;
+    }
+  } while (!parent_name.empty());
 }
 
 // get transform in world frame
-void TreeKinematic::transformInWorld(Eigen::Affine3d& ret_trans, const std::string& branch_name, double s) const {
-	// get orientation in tree
-	transformInTree(ret_trans, branch_name, s);
-	// apply transform to get position in world
-	ret_trans = _transform * ret_trans;
+void TreeKinematic::transformInWorld(Eigen::Affine3d &ret_trans,
+                                     const std::string &branch_name,
+                                     double s) const {
+  // get orientation in tree
+  transformInTree(ret_trans, branch_name, s);
+  // apply transform to get position in world
+  ret_trans = _transform * ret_trans;
 }
 
 // get position in tree frame
-void TreeKinematic::positionInTree(Vector3d& ret_vec, const std::string& branch_name, double s) const {
-	Affine3d trans;
-	transformInTree(trans, branch_name, s);
-	ret_vec = trans.translation();
+void TreeKinematic::positionInTree(Vector3d &ret_vec,
+                                   const std::string &branch_name,
+                                   double s) const {
+  Affine3d trans;
+  transformInTree(trans, branch_name, s);
+  ret_vec = trans.translation();
 }
 
 // get orientation in tree frame
-void TreeKinematic::orientationInTree(Matrix3d& ret_mat, const std::string& branch_name, double s) const {
-	Affine3d trans;
-	transformInTree(trans, branch_name, s);
-	ret_mat = trans.rotation();
+void TreeKinematic::orientationInTree(Matrix3d &ret_mat,
+                                      const std::string &branch_name,
+                                      double s) const {
+  Affine3d trans;
+  transformInTree(trans, branch_name, s);
+  ret_mat = trans.rotation();
 }
 
 // get position in world frame
-void TreeKinematic::positionInWorld(Vector3d& ret_vec, const std::string& branch_name, double s) const {
-	Affine3d trans;
-	transformInWorld(trans, branch_name, s);
-	ret_vec = trans.translation();
+void TreeKinematic::positionInWorld(Vector3d &ret_vec,
+                                    const std::string &branch_name,
+                                    double s) const {
+  Affine3d trans;
+  transformInWorld(trans, branch_name, s);
+  ret_vec = trans.translation();
 }
 
 // get orientation in world frame
-void TreeKinematic::orientationInWorld(Matrix3d& ret_mat, const std::string& branch_name, double s) const {
-	Affine3d trans;
-	transformInWorld(trans, branch_name, s);
-	ret_mat = trans.rotation();
+void TreeKinematic::orientationInWorld(Matrix3d &ret_mat,
+                                       const std::string &branch_name,
+                                       double s) const {
+  Affine3d trans;
+  transformInWorld(trans, branch_name, s);
+  ret_mat = trans.rotation();
 }
 
 // get linear jacobian
-void TreeKinematic::jacobianLinear(MatrixXd& ret_mat, const std::string& branch_name, const SplinePointCartesian& spline_point) const {
-	string parent_name = "";
-	ret_mat.setZero(3, 2*_branches.size());
+void TreeKinematic::jacobianLinear(
+    MatrixXd &ret_mat, const std::string &branch_name,
+    const SplinePointCartesian &spline_point) const {
+  string parent_name = "";
+  ret_mat.setZero(3, 2 * _branches.size());
 
-	// start at branch and work down to trunk
-	string br_name_local = branch_name;
-	double s_local = spline_point.s;
-	SplinePointCartesian spt_local = spline_point;
-	BranchList::const_iterator br_itr;
-	IndexMap::const_iterator br_ind_itr;
-	const BranchList::const_iterator br_beg = _branches.cbegin();
-	BranchList::const_iterator parent_br_itr;
-	Vector3d position;
-	Matrix3d rotation;
-	MatrixXd branch_jacobian_linear(3,2);
-	int br_index;
+  // start at branch and work down to trunk
+  string br_name_local = branch_name;
+  double s_local = spline_point.s;
+  SplinePointCartesian spt_local = spline_point;
+  BranchList::const_iterator br_itr;
+  IndexMap::const_iterator br_ind_itr;
+  const BranchList::const_iterator br_beg = _branches.cbegin();
+  BranchList::const_iterator parent_br_itr;
+  // Rotation matrix from spline attachment frame to parent.
+  // Note that this does not include the rotation offset to the parent
+  // attachment frame.
+  Matrix3d parent_R_attachment_frame = Matrix3d::Identity();
+  MatrixXd branch_jacobian_linear(3, 2);
+  Matrix3d dRot_dalp, dRot_dbeta;
+  Vector3d point_in_spline = Vector3d::Zero();
+  int br_index;
 
-	// check if valid branch
-	br_itr = _branches.find(branch_name);
-	if (br_itr == _branches.cend()) {
-		throw(runtime_error("Unknown branch."));
-	}
+  // check if valid branch
+  br_itr = _branches.find(branch_name);
+  if (br_itr == _branches.cend()) {
+    throw(runtime_error("Unknown branch."));
+  }
 
-	// update transform
-	do {
-		// get branch
-		br_itr = _branches.find(br_name_local);
-		br_ind_itr = _branch_index_map.find(br_name_local);
-		br_index = br_ind_itr->second;
-		// get position in spline
-		br_itr->second->spline()->splineOrientation(rotation, s_local);
-		br_itr->second->spline()->splineLinearJacobian(branch_jacobian_linear, spt_local);
-		ret_mat.block(0,br_index*2, 3, 2) = branch_jacobian_linear;
-		ret_mat = rotation * ret_mat;
+  // update transform
+  do {
+    // get branch
+    br_itr = _branches.find(br_name_local);
+    br_ind_itr = _branch_index_map.find(br_name_local);
+    br_index = br_ind_itr->second;
+    // Rotate Jacobian for velocity in child frame to this spline frame
+    br_itr->second->spline()->splineOrientation(parent_R_attachment_frame,
+                                                s_local);
+    ret_mat = parent_R_attachment_frame * ret_mat;
 
-		// find parent
-		if (br_name_local.compare(trunk()) != 0) {
-			const auto it = _parent_map.find(br_name_local);
-			parent_name = it->second;
-		} else {
-			parent_name = "";
-		}
+    // get linear Jacobian for position in spline
+    br_itr->second->spline()->splineLinearJacobian(branch_jacobian_linear,
+                                                   spt_local);
+    ret_mat.block(0, br_index * 2, 3, 2) = branch_jacobian_linear;
 
-		if (!parent_name.empty()) {
-			// get parent
-			parent_br_itr = _branches.find(parent_name);
-			// get info in parent
-			ChildBranchInfo info = parent_br_itr->second->childBranchInfo(br_name_local);
-			// update rotation and position
-			ret_mat = info.rotation * ret_mat;
-			// update s and br
-			br_name_local = parent_name;
-			s_local = info.s;
-			spt_local = SplinePointCartesian(s_local, 0, 0);
-		}
-	} while (!parent_name.empty());
+		// Add omega \cross p_attachment_to_point term
+    br_itr->second->spline()->splinedRotdq(dRot_dalp, dRot_dbeta, s_local);
+    ret_mat.block(0, br_index * 2, 3, 1) += dRot_dalp * point_in_spline;
+    ret_mat.block(0, br_index * 2 + 1, 3, 1) += dRot_dbeta * point_in_spline;
 
-	// apply tree to world rotation
-	ret_mat = _transform.rotation() * ret_mat;
+    Vector3d attachment_pos_in_spline;
+    br_itr->second->spline()->splineLocation(attachment_pos_in_spline, s_local);
+    point_in_spline =
+        attachment_pos_in_spline + parent_R_attachment_frame * point_in_spline;
+
+    // find parent
+    if (br_name_local.compare(trunk()) != 0) {
+      const auto it = _parent_map.find(br_name_local);
+      parent_name = it->second;
+    } else {
+      parent_name = "";
+    }
+
+    if (!parent_name.empty()) {
+      // get parent
+      parent_br_itr = _branches.find(parent_name);
+      // get info in parent
+      ChildBranchInfo info =
+          parent_br_itr->second->childBranchInfo(br_name_local);
+      // rotate jacobian by offset to parent attachment frame
+      ret_mat = info.rotation * ret_mat;
+      // rotate position by offset to parent attachment frame
+      point_in_spline = info.rotation * point_in_spline;
+      // update s and br
+      br_name_local = parent_name;
+      s_local = info.s;
+      spt_local = SplinePointCartesian(s_local, 0, 0);
+    }
+  } while (!parent_name.empty());
+
+  // apply tree to world rotation
+  ret_mat = _transform.rotation() * ret_mat;
+}
+
+void TreeKinematic::jacobianLinear(Eigen::MatrixXd &ret_mat,
+                                   const std::string &branch_name,
+                                   double s_branch) const {
+  return jacobianLinear(ret_mat, branch_name,
+                        SplinePointCartesian(s_branch, 0, 0));
 }
 
 // update the branch index list. called internally whenever tree structure
 // is changed
 void TreeKinematic::updateBranchIndices() {
-	// clear existing index list and maps
-	_branch_index_map.clear();
-	_branch_indices.clear();
+  // clear existing index list and maps
+  _branch_index_map.clear();
+  _branch_indices.clear();
 
-	for (auto itr: _branches) {
-		// insert into vector
-		_branch_indices.push_back(itr.first);
-		// insert into map
-		_branch_index_map[itr.first] = _branch_indices.size() - 1;
-	}
+  for (auto itr : _branches) {
+    // insert into vector
+    _branch_indices.push_back(itr.first);
+    // insert into map
+    _branch_index_map[itr.first] = _branch_indices.size() - 1;
+  }
 }

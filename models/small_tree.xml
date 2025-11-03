@@ -1,0 +1,33 @@
+<?xml version="1.0" ?>
+
+<tree name="simple-tree" trunk_name="trunk" position="0.0 0.0 0.0" orientation="0.707 0.0 -0.707 0.0">
+	<!-- trunk specification -->
+	<trunk>
+		<spline length="0.9" radius="0.07"/>
+	</trunk>
+
+	<!-- branch specifications -->
+	<branch name="branch-1">
+		<parent name="trunk" s="0.6" orientation="0.9659 0.0 0.0 0.2588"/>
+		<spline length="0.8" radius="0.05"/>
+	</branch>
+
+	<branch name="branch-2">
+		<parent name="trunk" s="0.8" orientation="0.9659 0.0 0.0 -0.2588"/>
+		<spline length="0.6" radius="0.04"/>
+	</branch>
+
+	<branch name="branch-3">
+		<parent name="trunk" s="0.9" orientation="1.0 0.0 0.0 0.0"/>
+		<spline length="0.3" radius="0.02"/>
+	</branch>
+
+	<!-- fruit specifications -->
+	<fruit name="cherry" radius="0.10">
+		<parent name="branch-1" s="0.8"/>
+	</fruit>
+
+	<fruit name="cherry2" radius="0.08">
+		<parent name="branch-2" s="0.6"/>
+	</fruit>
+</tree>

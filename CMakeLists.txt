@@ -8,7 +8,12 @@ set (COMMON_SOURCE
 	${PROJECT_SOURCE_DIR}/src/QuadraticSplineVisual.cpp
 	${PROJECT_SOURCE_DIR}/src/QuadraticSplineKinematic.cpp
 	${PROJECT_SOURCE_DIR}/src/TreeKinematic.cpp
+	${PROJECT_SOURCE_DIR}/src/TreeDynamics.cc
+	${PROJECT_SOURCE_DIR}/src/TreeVisual.cc
 	${PROJECT_SOURCE_DIR}/src/LCPSolver.cpp
+	${PROJECT_SOURCE_DIR}/src/collision/Cursor.cc
+	${PROJECT_SOURCE_DIR}/src/collision/Sphere.cc
+	${PROJECT_SOURCE_DIR}/src/collision/SplineContact.cc
 	${PROJECT_SOURCE_DIR}/src/graphics/Graphics.cc
 	# ${PROJECT_SOURCE_DIR}/src/timer/LoopTimer.h
 	# ${PROJECT_SOURCE_DIR}/src/force_sensor/ForceSensorSim.h
@@ -31,9 +36,13 @@ link_directories(${CHAI3D_LIBRARY_DIRS})
 find_package(glfw3 QUIET)
 find_library(GLFW_LIBRARY glfw)
 
+# - tinyxml
+find_library(TINYXML_LIBRARIES tinyxml2)
+
 set(COMMON_LIBRARIES
 	${CHAI3D_LIBRARIES}
 	${GLFW_LIBRARY}
+	${TINYXML_LIBRARIES}
 	)
 
 # add apps

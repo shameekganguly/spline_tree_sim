@@ -3,13 +3,15 @@
 
 #include <Sai2Graphics.h>
 #include <GLFW/glfw3.h> //must be loaded after loading opengl/glew
+#include "LCPSolver.h"
 #include "TreeParser.h"
 #include "TreeKinematic.h"
 #include "QuadraticSplineDynamic.h"
 #include "TreeVisual.h"
 #include "SplineContact.h"
+#include "collision/Cursor.h"
+#include "collision/Sphere.h"
 #include "timer/LoopTimer.h"
-#include "LCPSolver.h"
 
 #include <Eigen/Core>
 #include <iostream>
@@ -122,7 +124,7 @@ int main(int argc, char** argv) {
     auto haptic_force_line = new cShapeLine();
     haptic_force_line->setShowEnabled(false);
     haptic_force_line->setLineWidth(4.0);
-		
+
 	// create a haptic device handler
     auto handler = new cHapticDeviceHandler();
 
@@ -160,7 +162,7 @@ int main(int argc, char** argv) {
 		// render scene
 		graphics->_world->updateShadowMaps(false);
 		graphics->render(camera_name, width, height);
-		
+
 		// swap buffers
 		glfwSwapBuffers(window);
 
@@ -174,7 +176,7 @@ int main(int argc, char** argv) {
 
 	    // poll for events
 	    glfwPollEvents();
-	
+
 		// move scene camera as required
     	// graphics->getCameraPose(camera_name, camera_pos, camera_vertical, camera_lookat);
     	Eigen::Vector3d cam_up_axis;
@@ -224,7 +226,7 @@ int main(int argc, char** argv) {
 	// stop simulation
 	fSimulationRunning = false;
 	haptics_thread.join();
-	
+
     // destroy context
     glfwDestroyWindow(window);
 
@@ -567,7 +569,7 @@ void updateHaptics(
 			dq[1] = gamma_tree[2*branch_index + 1]/spline_dyn_ptr->_bs;
 			spline_ptr->_alpha += dq[0]*loop_dt;
 			spline_ptr->_beta += dq[1]*loop_dt;
-		}		
+		}
 		/* --- TREE DYNAMICS END ---*/
 
 		// - update haptic proxy point

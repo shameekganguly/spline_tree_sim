@@ -11,6 +11,10 @@
 
 #include "QuadraticSplineKinematic.h"
 #include "QuadraticSplineVisual.h"
+#include "TreeDynamics.h"
+#include "TreeKinematic.h"
+#include "TreeParser.h"
+#include "TreeVisual.h"
 #include "graphics/Graphics.h"
 #include "timer/LoopTimer.h"
 
@@ -35,13 +39,17 @@ bool fRotPanTilt = false;
 
 // function for updating scene
 bool fSimulationRunning = false;
-void update(spline_sim::Graphics *graphics, QuadraticSplineKinematic *spline,
-            QuadraticSplineVisual *spline_graphic, chai3d::cShapeSphere *cherry,
-            const double s_cherry);
+void update(TreeKinematic *tree_kinematic);
 
 const std::string kCameraName = "camera";
 
 int main(int argc, char **argv) {
+  if (argc < 2) {
+    std::cerr << "Did not pass model file" << std::endl;
+    return 0;
+  }
+  std::string model_file(argv[1]);
+  std::cout << "Loading: " << model_file << std::endl;
   auto graphics = std::make_unique<spline_sim::Graphics>();
 
   // Add lights
@@ -62,34 +70,26 @@ int main(int argc, char **argv) {
 
   graphics->SetBackgroundColor({0.3, 0.5, 0.7});
 
-  // create the kinematic spline element
-  // TODO: store the transform from the world frame to the local frame of
-  // this spline
-  auto spline = std::make_unique<QuadraticSplineKinematic>();
-  spline->_length = 1.0;
-  spline->_radius = 0.04;
-  spline->_alpha = 0.00001;
-  spline->_beta = 0.00001;
+  // Parse model
+  auto tree_parser = TreeParser(model_file);
+  std::unique_ptr<TreeKinematic> tree(tree_parser.loadDescToTree());
 
-  // create the spline element to display
-  auto spline_graphic = new QuadraticSplineVisual(spline.get());
-  graphics->AddOwning(spline_graphic);
-  spline_graphic->setLocalPos(Vector3d(-0.28, 0.05, 1.4));
-  Matrix3d spline_rot1, spline_rot2;
-  spline_rot1 << 0.707, -0.707, 0.0, 0.707, 0.707, 0.0, 0.0, 0.0, 1.0;
-  spline_rot2 << 0.866, 0.0, 0.5, 0.0, 1.0, 0.0, -0.5, 0.0, 0.866;
-  spline_graphic->setLocalRot(spline_rot1 * spline_rot2);
-  spline_graphic->m_material->setColorf(0.3, 0.15, 0.1);
-  spline_graphic->m_material->setShininess(100);
-  spline_graphic->_nv_longitudinal = 50;
+  auto tree_visual = new spline_sim::TreeVisual(tree.get());
+  graphics->AddOwning(tree_visual);
 
-  // create the cherry
-  double r0 = spline->_radius;
-  double s_cherry = spline->_length;
-  auto cherry = new chai3d::cShapeSphere(r0);
-  spline_graphic->addChild(cherry);
-  cherry->m_material->setBrownMaroon();
-  cherry->m_material->setShininess(100);
+  auto branch_material = cMaterial::create();
+  branch_material->m_diffuse = cColorf(0.77, 0.75, 0.62);
+  branch_material->m_ambient = cColorf(0.04, 0.01, 0.01);
+  branch_material->m_specular = cColorf(0.0, 0.05, 0.05);
+  branch_material->setShininess(100);
+  tree_visual->branchMaterialIs(branch_material);
+
+  auto fruit_material = cMaterial::create();
+  fruit_material->m_diffuse = cColorf(0.6, 0.4, 0.05);
+  fruit_material->m_ambient = cColorf(0.2, 0.02, 0.02);
+  fruit_material->m_specular = cColorf(0.0, 0.05, 0.05);
+  fruit_material->setShininess(100);
+  tree_visual->fruitMaterialIs(fruit_material);
 
   /*------- Set up visualization -------*/
   // set up error callback
@@ -123,8 +123,7 @@ int main(int argc, char **argv) {
   glfwSetKeyCallback(window, keySelect);
   glfwSetMouseButtonCallback(window, mouseClick);
 
-  std::thread update_thread(update, graphics.get(), spline.get(),
-                            spline_graphic, cherry, s_cherry);
+  std::thread update_thread(update, tree.get());
 
   /*------- Loop -------*/
   // cache variables
@@ -141,12 +140,9 @@ int main(int argc, char **argv) {
     glfwGetFramebufferSize(window, &width, &height);
 
     // render scene
+    tree_visual->updateGraphics();
     graphics->UpdateShadowMaps(false);
     graphics->Render(kCameraName, width, height);
-
-    // compute global position of spline and cherry
-    cherry->computeGlobalPositions();
-    spline_graphic->computeGlobalPositions();
 
     // swap buffers
     glfwSwapBuffers(window);
@@ -224,9 +220,7 @@ int main(int argc, char **argv) {
 }
 
 //------------------------------------------------------------------------------
-void update(spline_sim::Graphics *graphics, QuadraticSplineKinematic *spline,
-            QuadraticSplineVisual *spline_graphic, chai3d::cShapeSphere *cherry,
-            const double s_cherry) {
+void update(TreeKinematic *tree_kinematic) {
   // create a timer
   LoopTimer timer;
   timer.initializeTimer();
@@ -235,25 +229,7 @@ void update(spline_sim::Graphics *graphics, QuadraticSplineKinematic *spline,
 
   bool fTimerDidSleep = true;
 
-  // cherry updates
-  Vector3d cherry_pos_local, cherry_pos_global;
-  bool cherry_still_on_plant = true;
-  const double cherry_pluck_force_thresh = 1.5;
-  Vector3d cherry_vel, cherry_acc, cherry_force;
-
-  // spline dynamics variables
-  double ks = 10.0;
-  double b = 0.05;
-  double cherry_r = cherry->getRadius();
-  double cherry_r_max = 0.15;
-  const double cherry_growth_rate = 0.007; // r/ sec
-  MatrixXd Jv_s;
-  MatrixXd Jlp;
-  VectorXd dq(2);
-  Vector3d F_cherry;
-  VectorXd gamma_cherry;
-  const double density_cherry = 0.65;
-  Vector3d F_haptic(0, 0, 0);
+  spline_sim::TreeDynamics dynamics(tree_kinematic);
 
   // start simulation loop
   fSimulationRunning = true;
@@ -265,66 +241,7 @@ void update(spline_sim::Graphics *graphics, QuadraticSplineKinematic *spline,
     double curr_time = timer.elapsedTime();
     double loop_dt = curr_time - last_time;
 
-    /* --- SPLINE KINEMATICS UPDATES BEG --- */
-    if (cherry_still_on_plant) {
-      spline->splineLocation(cherry_pos_local, s_cherry);
-      cherry->setLocalPos(cherry_pos_local);
-
-      if (cherry_r < cherry_r_max) {
-        cherry_r += cherry_growth_rate * loop_dt;
-      }
-      cherry->setRadius(cherry_r);
-    }
-    /* --- SPLINE KINEMATICS UPDATES END --- */
-
-    /* --- CHERRY DYNAMICS BEG ---*/
-    if (F_haptic.norm() > cherry_pluck_force_thresh) {
-      // remove cherry from plant and add it to tree
-      cherry_pos_global = cherry->getGlobalPos().eigen();
-      spline_graphic->removeChild(cherry);
-      graphics->AddOwning(cherry);
-      // set flag
-      cherry_still_on_plant = false;
-    }
-
-    if (!cherry_still_on_plant) {
-      cherry_pos_global = cherry->getGlobalPos().eigen();
-      cherry_acc.setZero();
-      cherry_acc[2] -= 9.8;
-      cherry_acc += 1.0 /
-                    (density_cherry * 4.0 / 3.0 * M_PI * pow(cherry_r, 3)) *
-                    F_haptic;
-      cherry_vel += cherry_acc * 0.01;
-      cherry_pos_global += cherry_vel * 0.01;
-      // clamp to ground
-      double cherry_min_height_ground = 0.0;
-      if (cherry_pos_global[2] < cherry_min_height_ground) {
-        cherry_pos_global[2] = cherry_min_height_ground;
-      }
-      cherry->setLocalPos(cherry_pos_global);
-    }
-
-    /* --- CHERRY DYNAMICS END ---*/
-
-    /* --- SPLINE DYNAMICS BEG ---*/
-    spline->splineLinearJacobian(Jv_s, s_cherry);
-    F_cherry.setZero();
-    if (cherry_still_on_plant) {
-      F_cherry[2] = -9.8 * density_cherry * 4.0 / 3.0 * M_PI * pow(cherry_r, 3);
-      F_cherry += F_haptic;
-    }
-    Matrix3d rot_world;
-    rot_world = spline_graphic->getLocalRot().eigen();
-    Jv_s = rot_world * Jv_s;
-    gamma_cherry = Jv_s.transpose() * F_cherry;
-
-    spline->splineProjectionLengthJacobian(Jlp, 0.5);
-    dq[0] = -Jlp(0, 0) * ks / b * spline->splineProjectionLength(0.5) +
-            gamma_cherry[0] / b;
-    dq[1] = -Jlp(0, 1) * ks / b * spline->splineProjectionLength(0.5) +
-            gamma_cherry[1] / b;
-    spline->_alpha += dq[0] * loop_dt;
-    spline->_beta += dq[1] * loop_dt;
+    dynamics.Step(loop_dt, /*contact_list=*/{});
 
     // -------------------------------------------
     // update last time
