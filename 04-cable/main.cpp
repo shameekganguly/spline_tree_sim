@@ -38,6 +38,7 @@ bool fTransYn = false;
 bool fRotPanTilt = false;
 
 // function for updating scene
+bool fPaused = true;
 bool fSimulationRunning = false;
 void update(TreeKinematic *tree_kinematic);
 
@@ -71,7 +72,7 @@ int main(int argc, char **argv) {
   graphics->SetBackgroundColor({0.3, 0.5, 0.7});
 
   // Parse model
-  auto tree_parser = TreeParser(model_file);
+  auto tree_parser = spline_sim::TreeParser(model_file);
   std::unique_ptr<TreeKinematic> tree(tree_parser.loadDescToTree());
 
   auto tree_visual = new spline_sim::TreeVisual(tree.get());
@@ -230,6 +231,7 @@ void update(TreeKinematic *tree_kinematic) {
   bool fTimerDidSleep = true;
 
   spline_sim::TreeDynamics dynamics(tree_kinematic);
+  std::cout << "Tree fixed? " << tree_kinematic->Fixed() << "\n";
 
   // start simulation loop
   fSimulationRunning = true;
@@ -241,7 +243,9 @@ void update(TreeKinematic *tree_kinematic) {
     double curr_time = timer.elapsedTime();
     double loop_dt = curr_time - last_time;
 
-    dynamics.Step(loop_dt, /*contact_list=*/{});
+    if (!fPaused) {
+      dynamics.Step(loop_dt, /*contact_list=*/{});
+    }
 
     // -------------------------------------------
     // update last time
@@ -260,6 +264,9 @@ void glfwError(int error, const char *description) {
 
 void keySelect(GLFWwindow *window, int key, int scancode, int action,
                int mods) {
+  if ((key == 'p' || key == 'P') && action == GLFW_PRESS) {
+    fPaused = (fPaused) ? false : true;
+  }
   bool set = (action != GLFW_RELEASE);
   switch (key) {
   case GLFW_KEY_ESCAPE:

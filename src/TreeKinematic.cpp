@@ -6,6 +6,22 @@
 using namespace std;
 using namespace Eigen;
 
+namespace {
+Eigen::Matrix3d crossMat(const Eigen::Vector3d &r) {
+  Eigen::Matrix3d ret_mat;
+  // clang-format off
+  ret_mat << 0, -r(2), r(1),
+					   r(2), 0, -r(0),
+						-r(1), r(0), 0;
+  // clang-format on
+  return ret_mat;
+}
+} // namespace
+
+uint TreeKinematic::dof() const {
+  return _fixed ? (_branches.size() * 2) : (_branches.size() * 2 + 6);
+}
+
 // add branch
 BranchKinematic *TreeKinematic::branchIs(const std::string &name,
                                          const std::string &parent_name,
@@ -155,6 +171,22 @@ Fruit *TreeKinematic::fruitRem(const std::string &name) {
   return fruit;
 }
 
+void TreeKinematic::branchBSIs(double bs) {
+  for (auto branch_itr = branchesItrBegin(); branch_itr != branchesItrEnd();
+       ++branch_itr) {
+    branch_itr->second->splineDynamic()->_bs = bs;
+  }
+}
+
+void TreeKinematic::branchKSIs(double ks) {
+  for (auto branch_itr = branchesItrBegin(); branch_itr != branchesItrEnd();
+       ++branch_itr) {
+    branch_itr->second->splineDynamic()->_ks = ks;
+  }
+}
+
+void TreeKinematic::FixedIs(bool fixed) { _fixed = fixed; }
+
 // get transform in tree frame
 void TreeKinematic::transformInTree(Eigen::Affine3d &ret_trans,
                                     const std::string &branch_name,
@@ -260,7 +292,9 @@ void TreeKinematic::jacobianLinear(
     MatrixXd &ret_mat, const std::string &branch_name,
     const SplinePointCartesian &spline_point) const {
   string parent_name = "";
-  ret_mat.setZero(3, 2 * _branches.size());
+  ret_mat.setZero(3, dof());
+
+  const uint base_fixed_col_offset = _fixed ? 0 : 6;
 
   // start at branch and work down to trunk
   string br_name_local = branch_name;
@@ -299,12 +333,15 @@ void TreeKinematic::jacobianLinear(
     // get linear Jacobian for position in spline
     br_itr->second->spline()->splineLinearJacobian(branch_jacobian_linear,
                                                    spt_local);
-    ret_mat.block(0, br_index * 2, 3, 2) = branch_jacobian_linear;
+    ret_mat.block(0, base_fixed_col_offset + br_index * 2, 3, 2) =
+        branch_jacobian_linear;
 
-		// Add omega \cross p_attachment_to_point term
+    // Add omega \cross p_attachment_to_point term
     br_itr->second->spline()->splinedRotdq(dRot_dalp, dRot_dbeta, s_local);
-    ret_mat.block(0, br_index * 2, 3, 1) += dRot_dalp * point_in_spline;
-    ret_mat.block(0, br_index * 2 + 1, 3, 1) += dRot_dbeta * point_in_spline;
+    ret_mat.block(0, base_fixed_col_offset + br_index * 2, 3, 1) +=
+        dRot_dalp * point_in_spline;
+    ret_mat.block(0, base_fixed_col_offset + br_index * 2 + 1, 3, 1) +=
+        dRot_dbeta * point_in_spline;
 
     Vector3d attachment_pos_in_spline;
     br_itr->second->spline()->splineLocation(attachment_pos_in_spline, s_local);
@@ -338,6 +375,15 @@ void TreeKinematic::jacobianLinear(
 
   // apply tree to world rotation
   ret_mat = _transform.rotation() * ret_mat;
+
+  // add base Jacobian if tree is not fixed
+  if (!_fixed) {
+    // linear velocity block
+    ret_mat.block(0, 0, 3, 3) = Matrix3d::Identity();
+    // angular velocity block
+    point_in_spline = _transform.rotation() * point_in_spline;
+    ret_mat.block(0, 3, 3, 3) = -crossMat(point_in_spline);
+  }
 }
 
 void TreeKinematic::jacobianLinear(Eigen::MatrixXd &ret_mat,

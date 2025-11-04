@@ -115,11 +115,6 @@ public:
 		const double radius
 	) const;
 
-// protected member functions
-protected:
-
-// private internal functions
-private:
 	// compute position on spline. No checks for bounds.
 	virtual void _splineLocation(Eigen::Vector3d& ret_vector, double s) const;
 

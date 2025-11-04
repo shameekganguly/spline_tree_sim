@@ -1,0 +1,15 @@
+<?xml version="1.0" ?>
+
+<tree name="cable" trunk_name="stem" position="0.0 0.0 1.0" orientation="1 0 0 0" fixed="1">
+	<!-- trunk specification -->
+	<trunk>
+		<spline length="0.9" radius="0.01"/>
+	</trunk>
+
+	<!-- branch specifications -->
+	<branch name="segment-1">
+		<parent name="stem" s="0.9" orientation="1 0 0 0"/>
+		<spline length="0.9" radius="0.01"/>
+		<dynamic ks="10" bs="0.1" xzx_deg="0 0 0"/>
+	</branch>
+</tree>

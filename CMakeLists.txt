@@ -9,6 +9,7 @@ set (COMMON_SOURCE
 	${PROJECT_SOURCE_DIR}/src/QuadraticSplineKinematic.cpp
 	${PROJECT_SOURCE_DIR}/src/TreeKinematic.cpp
 	${PROJECT_SOURCE_DIR}/src/TreeDynamics.cc
+	${PROJECT_SOURCE_DIR}/src/TreeParser.cc
 	${PROJECT_SOURCE_DIR}/src/TreeVisual.cc
 	${PROJECT_SOURCE_DIR}/src/LCPSolver.cpp
 	${PROJECT_SOURCE_DIR}/src/collision/Cursor.cc
