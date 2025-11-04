@@ -227,6 +227,7 @@ void QuadraticSplineKinematic::splinedRotdq(Eigen::Matrix3d &ret_dRot_dalp,
 
   // temp variables
   double g = gam();
+  double phi = s * g / _length;
   double tb = tan(_beta);
   double sa = sin(_alpha);
   double sb = sin(_beta);
@@ -235,75 +236,65 @@ void QuadraticSplineKinematic::splinedRotdq(Eigen::Matrix3d &ret_dRot_dalp,
   double den = sqrt(tb * tb + sa * sa);
   double dg_dalp = dgam_dalp();
   double dg_dbeta = dgam_dbeta();
-  double sinc2 = pow(sinc(s * g / (2.0 * _length)), 2);
-  double gam_bracket = sinc2 + s * g / _length * sinc(s * g / (2.0 * _length)) *
-                                   dsinc(s * g / (2.0 * _length));
 
   /* ---- dRot_dalp ---- */
   // Rxx_dalp
-  ret_dRot_dalp(0, 0) = -s / _length * sin(s * g / _length) * dg_dalp;
+  ret_dRot_dalp(0, 0) = -s / _length * sin(phi) * dg_dalp;
   // Rxy_dalp
-  ret_dRot_dalp(1, 0) = s / _length * cos(s * g / _length) * tb / den * dg_dalp;
-  ret_dRot_dalp(1, 0) -= sin(s * g / _length) * (ca * sa * tb) / pow(den, 3);
+  ret_dRot_dalp(1, 0) = s / _length * cos(phi) * tb / den * dg_dalp;
+  ret_dRot_dalp(1, 0) -= sin(phi) * (ca * sa * tb) / pow(den, 3);
   // Rxz_dalp
-  ret_dRot_dalp(2, 0) =
-      -s / _length * cos(s * g / _length) * sa / den * dg_dalp;
-  ret_dRot_dalp(2, 0) -= sin(s * g / _length) * ca * (tb * tb) / pow(den, 3);
+  ret_dRot_dalp(2, 0) = -s / _length * cos(phi) * sa / den * dg_dalp;
+  ret_dRot_dalp(2, 0) -= sin(phi) * ca * (tb * tb) / pow(den, 3);
   // Ryx_dalp
   ret_dRot_dalp(0, 1) = -ret_dRot_dalp(1, 0);
   // Ryy_dalp
-  ret_dRot_dalp(1, 1) =
-      2.0 * ca * sa * (1.0 - cos(s * g / _length)) / pow(den, 2);
-  ret_dRot_dalp(1, 1) -= s / _length * sin(s * g / _length) * dg_dalp;
+  ret_dRot_dalp(1, 1) = 2.0 * ca * sa * (1.0 - cos(phi)) / pow(den, 2);
+  ret_dRot_dalp(1, 1) -= s / _length * sin(phi) * dg_dalp;
   ret_dRot_dalp(1, 1) *= tb * tb / pow(den, 2);
   // Ryz_dalp
-  ret_dRot_dalp(2, 1) = s / _length * sin(s * g / _length) * sa * tb /
-                        (tb * tb + sa * sa) * dg_dalp;
-  ret_dRot_dalp(2, 1) += (1.0 - cos(s * g / _length)) * ca * tb *
-                         (tb * tb - sa * sa) / pow(den, 4);
+  ret_dRot_dalp(2, 1) =
+      s / _length * sin(phi) * sa * tb / pow(den, 2) * dg_dalp;
+  ret_dRot_dalp(2, 1) +=
+      (1.0 - cos(phi)) * ca * tb * (tb * tb - sa * sa) / pow(den, 4);
   // Rzx_dalp
   ret_dRot_dalp(0, 2) = -ret_dRot_dalp(2, 0);
   // Rzy_dalp
   ret_dRot_dalp(1, 2) = ret_dRot_dalp(2, 1);
   // Rzz_dalp
   ret_dRot_dalp(2, 2) =
-      2.0 * ca * (tb * tb) / sa * (cos(s * g / _length) - 1) / pow(den, 2);
-  ret_dRot_dalp(2, 2) -= s / _length * sin(s * g / _length) * dg_dalp;
+      2.0 * ca * (tb * tb) / sa * (cos(phi) - 1) / pow(den, 2);
+  ret_dRot_dalp(2, 2) -= s / _length * sin(phi) * dg_dalp;
   ret_dRot_dalp(2, 2) *= sa * sa / pow(den, 2);
 
   /* ---- dRot_dbeta ---- */
   // Rxx_dbeta
-  ret_dRot_dbeta(0, 0) = -s / _length * sin(s * g / _length) * dg_dbeta;
+  ret_dRot_dbeta(0, 0) = -s / _length * sin(phi) * dg_dbeta;
   // Rxy_dbeta
-  ret_dRot_dbeta(1, 0) =
-      -s / _length * cos(s * g / _length) * tb / den * dg_dbeta;
-  ret_dRot_dbeta(1, 0) -=
-      sin(s * g / _length) * (sa * sa) / (cb * cb) / pow(den, 3);
+  ret_dRot_dbeta(1, 0) = s / _length * cos(phi) * tb / den * dg_dbeta;
+  ret_dRot_dbeta(1, 0) += sin(phi) * (sa * sa) / (cb * cb) / pow(den, 3);
   // Rxz_dbeta
-  ret_dRot_dbeta(2, 0) =
-      s / _length * cos(s * g / _length) * sa / den * dg_dbeta;
-  ret_dRot_dbeta(2, 0) -=
-      sin(s * g / _length) * sa * tb / (cb * cb) / pow(den, 3);
+  ret_dRot_dbeta(2, 0) = -s / _length * cos(phi) * sa / den * dg_dbeta;
+  ret_dRot_dbeta(2, 0) += sin(phi) * sa * tb / (cb * cb) / pow(den, 3);
   // Ryx_dbeta
   ret_dRot_dbeta(0, 1) = -ret_dRot_dbeta(1, 0);
   // Ryy_dbeta
   ret_dRot_dbeta(1, 1) =
-      2.0 * (sa * sa) / (cb * sb) * (cos(s * g / _length) - 1.0) / pow(den, 2);
-  ret_dRot_dbeta(1, 1) -= s / _length * sin(s * g / _length) * dg_dbeta;
+      2.0 * (sa * sa) / (cb * sb) * (cos(phi) - 1.0) / pow(den, 2);
+  ret_dRot_dbeta(1, 1) -= s / _length * sin(phi) * dg_dbeta;
   ret_dRot_dbeta(1, 1) *= tb * tb / pow(den, 2);
   // Ryz_dbeta
   ret_dRot_dbeta(2, 1) =
-      s / _length * sin(s * g / _length) * sa * tb / pow(den, 2) * dg_dbeta;
-  ret_dRot_dbeta(2, 1) += (1.0 - cos(s * g / _length)) * sa / (cb * cb) *
-                          (sa * sa - tb * tb) / pow(den, 4);
+      s / _length * sin(phi) * sa * tb / pow(den, 2) * dg_dbeta;
+  ret_dRot_dbeta(2, 1) +=
+      (1.0 - cos(phi)) * sa / (cb * cb) * (sa * sa - tb * tb) / pow(den, 4);
   // Rzx_dbeta
   ret_dRot_dbeta(0, 2) = -ret_dRot_dbeta(2, 0);
   // Rzy_dbeta
   ret_dRot_dbeta(1, 2) = ret_dRot_dbeta(2, 1);
   // Rzz_dbeta
-  ret_dRot_dbeta(2, 2) =
-      2.0 * tb / (cb * cb) * (1.0 - cos(s * g / _length)) / pow(den, 2);
-  ret_dRot_dbeta(2, 2) -= s / _length * sin(s * g / _length) * dg_dbeta;
+  ret_dRot_dbeta(2, 2) = 2.0 * tb / (cb * cb) * (1.0 - cos(phi)) / pow(den, 2);
+  ret_dRot_dbeta(2, 2) -= s / _length * sin(phi) * dg_dbeta;
   ret_dRot_dbeta(2, 2) *= sa * sa / pow(den, 2);
 }
 
@@ -489,11 +480,11 @@ void QuadraticSplineKinematic::_splineOrientation(Eigen::Matrix3d &ret_matrix,
     double den = sqrt(pow(tan(_beta), 2) + pow(sin(_alpha), 2));
     double cos_t = tan(_beta) / den;
     double sin_t = -sin(_alpha) / den;
-    ret_matrix << cos(phi), -sin(phi) * cos_t, -sin(phi) * sin_t,
-        sin(phi) * cos_t, pow(sin_t, 2) + pow(cos_t, 2) * cos(phi),
-        (cos(phi) - 1.0) * cos_t * sin_t, sin(phi) * sin_t,
-        (cos(phi) - 1.0) * cos_t * sin_t,
-        pow(cos_t, 2) + pow(sin_t, 2) * cos(phi);
+    // clang-format off
+    ret_matrix <<     cos(phi),                    -sin(phi) * cos_t,                       -sin(phi) * sin_t,
+                  sin(phi) * cos_t,   pow(sin_t, 2) + pow(cos_t, 2) * cos(phi),       (cos(phi) - 1.0) * cos_t * sin_t,
+                  sin(phi) * sin_t,        (cos(phi) - 1.0) * cos_t * sin_t,      pow(cos_t, 2) + pow(sin_t, 2) * cos(phi);
+    // clang-format on
   }
 }
 
