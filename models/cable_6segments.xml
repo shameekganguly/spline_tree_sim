@@ -1,0 +1,48 @@
+<?xml version="1.0" ?>
+
+<tree name="cable" trunk_name="stem" position="0.0 0.0 0.2" orientation="1 0 0 0" fixed="1">
+	<!-- trunk specification -->
+	<trunk>
+		<spline length="0.2" radius="0.01"/>
+		<dynamic ks="1000000" bs="0.5" xzx_deg="0 0 0"/>
+	</trunk>
+
+	<!-- branch specifications -->
+	<branch name="segment-1">
+		<parent name="stem" s="0.2" orientation="1 0 0 0"/>
+		<spline length="0.2" radius="0.01"/>
+		<dynamic ks="1000000" bs="0.5" xzx_deg="0 0 0"/>
+	</branch>
+	<branch name="segment-2">
+		<parent name="segment-1" s="0.2" orientation="1 0 0 0"/>
+		<spline length="0.2" radius="0.01"/>
+		<dynamic ks="1000000" bs="0.5" xzx_deg="0 0 0"/>
+	</branch>
+	<branch name="segment-3">
+		<parent name="segment-2" s="0.2" orientation="1 0 0 0"/>
+		<spline length="0.2" radius="0.01"/>
+		<dynamic ks="1000000" bs="0.5" xzx_deg="0 0 0"/>
+	</branch>
+	<branch name="segment-4">
+		<parent name="segment-3" s="0.2" orientation="1 0 0 0"/>
+		<spline length="0.2" radius="0.01"/>
+		<dynamic ks="1000000" bs="0.5" xzx_deg="0 0 0"/>
+	</branch>
+	<branch name="segment-5">
+		<parent name="segment-4" s="0.2" orientation="1 0 0 0"/>
+		<spline length="0.2" radius="0.01"/>
+		<dynamic ks="1000000" bs="0.5" xzx_deg="0 0 0"/>
+	</branch>
+	<branch name="segment-6">
+		<parent name="segment-5" s="0.2" orientation="1 0 0 0"/>
+		<spline length="0.2" radius="0.01"/>
+		<dynamic ks="1000000" bs="0.5" xzx_deg="0 0 0"/>
+	</branch>
+
+	<fruit name="connector1" radius="0.02" density="1000">
+		<parent name="stem" s="0"/>
+	</fruit>
+	<fruit name="connector2" radius="0.02" density="1000">
+		<parent name="segment-6" s="0.2"/>
+	</fruit>
+</tree>

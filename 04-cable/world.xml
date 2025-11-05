@@ -1,0 +1,6 @@
+<?xml version="1.0" ?>
+<world name="demo_world">
+	<tree name="cable1" position="0.0 0.0 0.2" orientation="1 0 0 0" fixed="1">
+		<path>../models/cable_6segments.xml</path>
+	</tree>
+</world>
