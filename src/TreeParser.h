@@ -51,10 +51,14 @@ struct FruitString {
   std::string name;
   double radius;
   ParentString parent;
+  double density;
+  bool f_density_assigned;
 };
 
 struct TrunkString {
   SplineString spline;
+  DynamicString dynamic;
+  bool f_dynamic_assigned;
 };
 
 struct TreeString {
@@ -69,7 +73,7 @@ struct TreeString {
   std::map<std::string, BranchString> branches;
   std::vector<FruitString> fruits;
   bool fixed = false;
-	bool f_fixed_assigned;
+  bool f_fixed_assigned;
 };
 
 class TreeParser {
@@ -95,23 +99,27 @@ public:
 
   // internal member functions
 public:
-  Eigen::Vector3d parsePosition(const std::string &postion_string);
+  static Eigen::Vector3d parsePosition(const std::string &postion_string);
 
-  Eigen::Quaterniond parseOrientation(const std::string &orientation_string);
+  static Eigen::Quaterniond
+  parseOrientation(const std::string &orientation_string);
 
-  Eigen::Quaterniond parseEulerXZXDeg(const std::string &orientation_string);
+  static Eigen::Quaterniond
+  parseEulerXZXDeg(const std::string &orientation_string);
 
-  TrunkString parseTrunk(tinyxml2::XMLElement *trunk_element);
+  static TrunkString parseTrunk(tinyxml2::XMLElement *trunk_element);
 
-  SplineString parseSpline(tinyxml2::XMLElement *spline_element);
+  static SplineString parseSpline(tinyxml2::XMLElement *spline_element);
 
-  DynamicString parseDynamic(tinyxml2::XMLElement *dynamic_element);
+  static DynamicString parseDynamic(tinyxml2::XMLElement *dynamic_element);
 
-  BranchString parseBranch(tinyxml2::XMLElement *branch_element);
+  static BranchString parseBranch(tinyxml2::XMLElement *branch_element);
 
-  FruitString parseFruit(tinyxml2::XMLElement *fruit_element);
+  static FruitString parseFruit(tinyxml2::XMLElement *fruit_element);
 
-  ParentString parseParent(tinyxml2::XMLElement *parent_element);
+  static ParentString parseParent(tinyxml2::XMLElement *parent_element);
+
+  static bool parseBool(const std::string &bool_string);
 };
 
 } // namespace spline_sim

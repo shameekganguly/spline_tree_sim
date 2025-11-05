@@ -29,7 +29,7 @@
 		<parent name="branch-1" s="0.8"/>
 	</fruit>
 
-	<!-- <fruit name="cherry2" radius="0.08">
+	<fruit name="cherry2" radius="0.08">
 		<parent name="branch-2" s="0.6"/>
-	</fruit> -->
+	</fruit>
 </tree>

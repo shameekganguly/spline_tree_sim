@@ -15,6 +15,7 @@ constexpr double kFloatingBaseAngularDamping = 0.01;
 void TreeDynamics::Step(double dt_sec,
                         const std::vector<ContactInfo> &contact_list,
                         const VectorXd &gamma_external) {
+  // std::cout << "Stepping dt: " << dt_sec << "\n";
   // TODO: make these class-internal to save some runtime memory allocation.
   // Capital gamma denotes net "external" generalized force, which is not
   // part of the constraint solver step. So not function of q_dot.
@@ -78,7 +79,23 @@ void TreeDynamics::Step(double dt_sec,
     tree_inv_b_mat.diagonal().segment<3>(3).fill(1.0 /
                                                  kFloatingBaseLinearDamping);
   }
-  // TODO: Add branch gravity force
+
+  // -- Add branch gravity force
+  for (auto branch_itr = tree_kinematic_->branchesItrBegin();
+       branch_itr != tree_kinematic_->branchesItrEnd(); ++branch_itr) {
+    if (branch_itr->first == tree_kinematic_->trunk()) {
+      continue;
+    }
+    auto *branch_ptr = branch_itr->second;
+    auto *spline_dyn_ptr = branch_ptr->splineDynamic();
+    // get index in gamma
+    uint branch_index = tree_kinematic_->branchIndex(branch_ptr->_name);
+    MatrixXd Jv_origin;
+    tree_kinematic_->jacobianLinear(Jv_origin, branch_itr->first,
+                                    SplinePointCartesian(0, 0, 0));
+    gamma_tree +=
+        Jv_origin.transpose() * Vector3d(0, 0, -9.8) * spline_dyn_ptr->_mass;
+  }
 
   // -- TODO: Move to tree haptic controller
   // // compute haptic force on branch
@@ -152,10 +169,15 @@ void TreeDynamics::Step(double dt_sec,
     // - solve the LCP in the contact co-ordinates with the dynamics above
     VectorXd F_contact, v_contact;
     contact_solver.solve(v_contact, F_contact, CM, cc);
-    // cout << "Solved LCP: " << v_contact.transpose() << " " <<
-    // F_contact.transpose() << endl;
-    gamma_tree += J_cs.transpose() * F_contact;
+    // std::cout << "Solved LCP: " << v_contact.transpose() << "\n";
+    VectorXd gamma_contact = J_cs.transpose() * F_contact;
+    // std::cout << "F_contact: " << F_contact.transpose() << "\n";
+    // std::cout << "J_cs : \n" << J_cs << "\n";
+    // std::cout << "Contact GC force: " << gamma_contact.transpose() << "\n";
+    gamma_tree += gamma_contact;
 
+    v_contact = J_cs * tree_inv_b_mat * gamma_tree;
+    // std::cout << "Updated v_contact: " << v_contact.transpose() << "\n";
     // TODO: set contact force on haptic proxy with callback.
     // F_proxy_contact = N.transpose() * F_contact;
   }
@@ -180,9 +202,16 @@ void TreeDynamics::Step(double dt_sec,
     // Integrate
     spline_ptr->_alpha += dalpha_dt * dt_sec;
     spline_ptr->_beta += dbeta_dt * dt_sec;
-    // std::cout << branch_itr->first << " a: " << spline_ptr->_alpha
-    //           << " b: " << spline_ptr->_beta << " gamma: " <<
-    //           spline_ptr->gam()
+    // std::cout << branch_itr->first << " spring gc force a: "
+    //           << gamma_springs[base_fixed_col_offset + 2 * branch_index]
+    //           << " spring gc force b: "
+    //           << gamma_springs[base_fixed_col_offset + 2 * branch_index + 1]
+    //           << "\n";
+    // std::cout << branch_itr->first << " gc force a: "
+    //           << gamma_tree[base_fixed_col_offset + 2 * branch_index]
+    //           << " a: " << spline_ptr->_alpha << "gc force b: "
+    //           << gamma_tree[base_fixed_col_offset + 2 * branch_index + 1]
+    //           << " b: " << spline_ptr->_beta << " gamma: " << spline_ptr->gam()
     //           << "\n";
   }
 

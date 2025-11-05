@@ -52,6 +52,7 @@ public:
   /* ---- Member access/augment ---- */
   // get name
   const std::string &name() const { return _name; }
+  void nameIs(const std::string &name) { _name = name; }
 
   // get dof
   uint dof() const;
@@ -228,8 +229,8 @@ public:
   // Get if tree is fixed
   bool Fixed() const { return _fixed; }
 
-	// Fix or unfix tree
-	void FixedIs(bool fixed);
+  // Fix or unfix tree
+  void FixedIs(bool fixed);
 
   /* ---- Kinematic evaluations ---- */
   // get transform in tree frame

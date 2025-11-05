@@ -13,9 +13,10 @@
 #include "QuadraticSplineVisual.h"
 #include "TreeDynamics.h"
 #include "TreeKinematic.h"
-#include "TreeParser.h"
 #include "TreeVisual.h"
 #include "graphics/Graphics.h"
+#include "simulation/World.h"
+#include "simulation/WorldParser.h"
 #include "timer/LoopTimer.h"
 
 using namespace Eigen;
@@ -40,17 +41,17 @@ bool fRotPanTilt = false;
 // function for updating scene
 bool fPaused = true;
 bool fSimulationRunning = false;
-void update(TreeKinematic *tree_kinematic);
+void update(spline_sim::World *world);
 
 const std::string kCameraName = "camera";
 
 int main(int argc, char **argv) {
   if (argc < 2) {
-    std::cerr << "Did not pass model file" << std::endl;
+    std::cerr << "Did not pass world file" << std::endl;
     return 0;
   }
-  std::string model_file(argv[1]);
-  std::cout << "Loading: " << model_file << std::endl;
+  std::string world_file(argv[1]);
+  std::cout << "Loading: " << world_file << std::endl;
   auto graphics = std::make_unique<spline_sim::Graphics>();
 
   // Add lights
@@ -69,28 +70,47 @@ int main(int argc, char **argv) {
   camera->set(cVector3d(camera_pos), cVector3d(camera_lookat),
               cVector3d(camera_vertical));
 
-  graphics->SetBackgroundColor({0.3, 0.5, 0.7});
+  graphics->SetBackgroundColor({0, 0, 0});
 
-  // Parse model
-  auto tree_parser = spline_sim::TreeParser(model_file);
-  std::unique_ptr<TreeKinematic> tree(tree_parser.loadDescToTree());
+  spline_sim::WorldParser parser(world_file);
+  auto world = parser.LoadWorld();
 
-  auto tree_visual = new spline_sim::TreeVisual(tree.get());
-  graphics->AddOwning(tree_visual);
+  spline_sim::PlaneInfo plane;
+  plane.name = "ground";
+  plane.point = Eigen::Vector3d::Zero();
+  plane.normal = Eigen::Vector3d(0, 0, 1);
+  world->AddPlane(plane);
 
-  auto branch_material = cMaterial::create();
-  branch_material->m_diffuse = cColorf(0.77, 0.75, 0.62);
-  branch_material->m_ambient = cColorf(0.04, 0.01, 0.01);
-  branch_material->m_specular = cColorf(0.0, 0.05, 0.05);
-  branch_material->setShininess(100);
-  tree_visual->branchMaterialIs(branch_material);
+  // Set up graphics
+  std::vector<spline_sim::TreeVisual *> tree_visuals;
+  for (auto tree_itr = world->TreesItrBegin(); tree_itr != world->TreesItrEnd();
+       tree_itr++) {
+    auto tree_visual = new spline_sim::TreeVisual(tree_itr->second.get());
+    graphics->AddOwning(tree_visual);
 
-  auto fruit_material = cMaterial::create();
-  fruit_material->m_diffuse = cColorf(0.6, 0.4, 0.05);
-  fruit_material->m_ambient = cColorf(0.2, 0.02, 0.02);
-  fruit_material->m_specular = cColorf(0.0, 0.05, 0.05);
-  fruit_material->setShininess(100);
-  tree_visual->fruitMaterialIs(fruit_material);
+    auto branch_material = cMaterial::create();
+    branch_material->m_diffuse = cColorf(0.77, 0.75, 0.62);
+    branch_material->m_ambient = cColorf(0.04, 0.01, 0.01);
+    branch_material->m_specular = cColorf(0.0, 0.05, 0.05);
+    branch_material->setShininess(100);
+    tree_visual->branchMaterialIs(branch_material);
+
+    auto fruit_material = cMaterial::create();
+    fruit_material->m_diffuse = cColorf(0.6, 0.4, 0.05);
+    fruit_material->m_ambient = cColorf(0.2, 0.02, 0.02);
+    fruit_material->m_specular = cColorf(0.0, 0.05, 0.05);
+    fruit_material->setShininess(100);
+    tree_visual->fruitMaterialIs(fruit_material);
+    tree_visuals.push_back(tree_visual);
+  }
+
+  // Add a box to visualize the plane contact
+  auto box_material = cMaterial::create();
+  box_material->setBrownBlanchedAlmond();
+  auto box = new chai3d::cShapeBox(10, 10, 0.1, box_material);
+  graphics->AddOwning(box);
+  // TODO: FIX PENETRATION ISSUE AND REMOVE THIS BUFFER 0.03 in Z
+  box->setLocalPos(cVector3d(0, 0, -0.05 - 0.04));
 
   /*------- Set up visualization -------*/
   // set up error callback
@@ -124,7 +144,7 @@ int main(int argc, char **argv) {
   glfwSetKeyCallback(window, keySelect);
   glfwSetMouseButtonCallback(window, mouseClick);
 
-  std::thread update_thread(update, tree.get());
+  std::thread update_thread(update, world.get());
 
   /*------- Loop -------*/
   // cache variables
@@ -141,7 +161,9 @@ int main(int argc, char **argv) {
     glfwGetFramebufferSize(window, &width, &height);
 
     // render scene
-    tree_visual->updateGraphics();
+    for (auto tree_visual : tree_visuals) {
+      tree_visual->updateGraphics();
+    }
     graphics->UpdateShadowMaps(false);
     graphics->Render(kCameraName, width, height);
 
@@ -221,7 +243,7 @@ int main(int argc, char **argv) {
 }
 
 //------------------------------------------------------------------------------
-void update(TreeKinematic *tree_kinematic) {
+void update(spline_sim::World *world) {
   // create a timer
   LoopTimer timer;
   timer.initializeTimer();
@@ -229,9 +251,6 @@ void update(TreeKinematic *tree_kinematic) {
   double last_time = timer.elapsedTime(); // secs
 
   bool fTimerDidSleep = true;
-
-  spline_sim::TreeDynamics dynamics(tree_kinematic);
-  std::cout << "Tree fixed? " << tree_kinematic->Fixed() << "\n";
 
   // start simulation loop
   fSimulationRunning = true;
@@ -244,7 +263,8 @@ void update(TreeKinematic *tree_kinematic) {
     double loop_dt = curr_time - last_time;
 
     if (!fPaused) {
-      dynamics.Step(loop_dt, /*contact_list=*/{});
+      world->Collide();
+      world->Step(loop_dt);
     }
 
     // -------------------------------------------

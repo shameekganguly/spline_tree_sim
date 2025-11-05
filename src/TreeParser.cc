@@ -1,11 +1,6 @@
 #include "TreeParser.h"
 
 namespace spline_sim {
-namespace {
-bool parseBool(const std::string &bool_string) {
-  return bool_string == "1" || bool_string == "true" || bool_string == "True";
-}
-} // namespace
 
 TreeParser::TreeParser(const std::string &tree_file) : _file_name(tree_file) {
   std::ifstream model_file(_file_name);
@@ -133,6 +128,19 @@ TreeKinematic *TreeParser::loadDescToTree() {
   BranchKinematic *trunk_ptr = ret_tree->branch(ret_tree->trunk());
   trunk_ptr->spline()->_length = _tree.trunk.spline.length;
   trunk_ptr->spline()->_radius = _tree.trunk.spline.radius;
+  if (_tree.trunk.f_dynamic_assigned) {
+    DynamicString dyn_str = _tree.trunk.dynamic;
+    trunk_ptr->splineDynamic()->_home_axis = dyn_str.home_axis;
+    if (dyn_str.f_ks_assigned) {
+      trunk_ptr->splineDynamic()->_ks = dyn_str.ks;
+    }
+    if (dyn_str.f_bs_assigned) {
+      trunk_ptr->splineDynamic()->_bs = dyn_str.bs;
+    }
+    // TODO: also update the home position for the kinematic spline
+    // TODO: consider a separate tag for the home position for the
+    // kinematic spline
+  }
   // add branches
   std::set<std::string> branches_added;
   std::map<std::string, BranchString>::iterator bmap_itr;
@@ -188,6 +196,9 @@ TreeKinematic *TreeParser::loadDescToTree() {
     auto fruit = ret_tree->fruitIs(fdesc_itr.name, fdesc_itr.parent.name, 0.0);
     // update fruit info
     fruit->radiusIs(fdesc_itr.radius);
+    if (fdesc_itr.f_density_assigned) {
+      fruit->densityIs(fdesc_itr.density);
+    }
     FruitInfo info;
     info.name = fruit->_name;
     info.s = fdesc_itr.parent.s;
@@ -259,6 +270,15 @@ TrunkString TreeParser::parseTrunk(tinyxml2::XMLElement *trunk_element) {
     throw(std::runtime_error("Spline not specified."));
   }
   ret_trunk.spline = parseSpline(spline_elem);
+  // parse optional dynamic
+  tinyxml2::XMLElement *dynamic_elem =
+      trunk_element->FirstChildElement("dynamic");
+  if (NULL == dynamic_elem) {
+    ret_trunk.f_dynamic_assigned = false;
+  } else {
+    ret_trunk.f_dynamic_assigned = true;
+    ret_trunk.dynamic = parseDynamic(dynamic_elem);
+  }
   return ret_trunk;
 }
 
@@ -387,6 +407,17 @@ FruitString TreeParser::parseFruit(tinyxml2::XMLElement *fruit_element) {
   }
   ret_fruit.parent = parseParent(parent_elem);
 
+  // parse optional density
+  {
+    const char *density_str = fruit_element->Attribute("density");
+    if (!density_str) {
+      ret_fruit.f_density_assigned = false;
+    } else {
+      ret_fruit.f_density_assigned = true;
+      ret_fruit.density = std::stod(density_str);
+    }
+  }
+
   return ret_fruit;
 }
 
@@ -434,6 +465,10 @@ ParentString TreeParser::parseParent(tinyxml2::XMLElement *parent_element) {
   }
 
   return ret_parent;
+}
+
+bool TreeParser::parseBool(const std::string &bool_string) {
+  return bool_string == "1" || bool_string == "true" || bool_string == "True";
 }
 
 } // namespace spline_sim

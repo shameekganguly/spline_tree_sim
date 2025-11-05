@@ -50,7 +50,8 @@ public:
 		 ret_vec[1] = _beta;
 	}
 
-	// get radius of the spline at location along the spline
+	// get radius of the spline at location along the spline in the plane normal
+	// to the spline at that location (i.e. local Y-Z plane)
 	virtual double radius(double s) const;
 
 	// get the local position of a point given the deformation coordinates in polar form

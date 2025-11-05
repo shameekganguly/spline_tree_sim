@@ -13,9 +13,12 @@ set (COMMON_SOURCE
 	${PROJECT_SOURCE_DIR}/src/TreeVisual.cc
 	${PROJECT_SOURCE_DIR}/src/LCPSolver.cpp
 	${PROJECT_SOURCE_DIR}/src/collision/Cursor.cc
+	${PROJECT_SOURCE_DIR}/src/collision/Plane.cc
 	${PROJECT_SOURCE_DIR}/src/collision/Sphere.cc
 	${PROJECT_SOURCE_DIR}/src/collision/SplineContact.cc
 	${PROJECT_SOURCE_DIR}/src/graphics/Graphics.cc
+	${PROJECT_SOURCE_DIR}/src/simulation/World.cc
+	${PROJECT_SOURCE_DIR}/src/simulation/WorldParser.cc
 	# ${PROJECT_SOURCE_DIR}/src/timer/LoopTimer.h
 	# ${PROJECT_SOURCE_DIR}/src/force_sensor/ForceSensorSim.h
 	# ${PROJECT_SOURCE_DIR}/src/force_sensor/ForceSensorDisplay.h
