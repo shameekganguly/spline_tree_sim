@@ -48,9 +48,10 @@ bool detectCollisionSplinePlane3points(
       (spline_mid_pt - plane_point_in_spline).dot(plane_normal_in_spline);
   double end_pt_dist =
       (spline_end_pt - plane_point_in_spline).dot(plane_normal_in_spline);
-  std::cout << "detectCollisionSplinePlane3points: origin_dist " << origin_dist
-            << " mid_pt_dist " << mid_pt_dist << " end_pt_dist " << end_pt_dist
-            << "\n";
+  // std::cout << "detectCollisionSplinePlane3points: origin_dist " <<
+  // origin_dist
+  // << " mid_pt_dist " << mid_pt_dist << " end_pt_dist " << end_pt_dist
+  // << "\n";
   if ((origin_dist < spline._radius + kDistanceTol) &&
       (mid_pt_dist < spline._radius + kDistanceTol) &&
       (end_pt_dist < spline._radius + kDistanceTol)) {
@@ -121,7 +122,7 @@ bool detectCollisionSplinePlane1point(
       return false;
     }
     double phi = atan(num / den);
-    std::cout << "phi: " << phi << " gamma: " << gamma << "\n";
+    // std::cout << "phi: " << phi << " gamma: " << gamma << "\n";
     // Both phi and phi + M_PI can be valid solutions.
     test_s.push_back(phi / gamma * spline._length);
     test_s.push_back((phi + M_PI) / gamma * spline._length);
@@ -131,14 +132,14 @@ bool detectCollisionSplinePlane1point(
   double min_s;
   for (uint i = 0; i < test_s.size(); i++) {
     if (test_s[i] < 0 || test_s[i] > spline._length) {
-      std::cout << "Skip test_s: " << test_s[i] << "\n";
+      // std::cout << "Skip test_s: " << test_s[i] << "\n";
       continue;
     }
     Vector3d spline_pt;
     spline.splineLocation(spline_pt, test_s[i]);
     double dist =
         (spline_pt - plane_point_in_spline).dot(plane_normal_in_spline);
-    std::cout << "test_s : " << test_s[i] << " dist: " << dist << "\n";
+    // std::cout << "test_s : " << test_s[i] << " dist: " << dist << "\n";
     if (dist < min_dist) {
       min_dist = dist;
       min_s = test_s[i];
@@ -188,15 +189,15 @@ void detectCollisionTreePlane(std::vector<ContactInfo> &ret_list,
     if (detectCollisionSplinePlane3points(
             branch_ret_list, *spline_ptr, mid_point, end_point,
             plane_point_in_spline, plane_normal_in_spline)) {
-      std::cout << "Here1\n";
+      // std::cout << "Here1\n";
     } else if (detectCollisionSplinePlane2points(
                    branch_ret_list, *spline_ptr, end_point,
                    plane_point_in_spline, plane_normal_in_spline)) {
-      std::cout << "Here2\n";
+      // std::cout << "Here2\n";
     } else if (detectCollisionSplinePlane1point(branch_ret_list, *spline_ptr,
                                                 plane_point_in_spline,
                                                 plane_normal_in_spline)) {
-      std::cout << "Here3\n";
+      // std::cout << "Here3\n";
     }
 
     for (uint i = 0; i < branch_ret_list.size(); i++) {

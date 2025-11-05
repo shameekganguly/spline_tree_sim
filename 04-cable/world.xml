@@ -3,4 +3,40 @@
 	<tree name="cable1" position="0.0 0.0 0.2" orientation="1 0 0 0" fixed="1">
 		<path>../models/cable_6segments.xml</path>
 	</tree>
+
+	<tree name="cable2" position="0.0 0.1 0.41" orientation="1 0 0 0" fixed="1">
+		<path>../models/cable_6segments.xml</path>
+	</tree>
+
+	<tree name="cable3" position="0.0 0.2 0.6" orientation="1 0 0 0" fixed="1">
+		<path>../models/cable_6segments.xml</path>
+	</tree>
+
+	<tree name="cable4" position="0.0 0.3 0.8" orientation="1 0 0 0" fixed="1">
+		<path>../models/cable_6segments.xml</path>
+	</tree>
+
+	<tree name="cable5" position="0.0 0.4 1.0" orientation="0 0 1 0" fixed="1">
+		<path>../models/cable_6segments.xml</path>
+	</tree>
+
+	<tree name="cable6" position="0.0 0.5 1.2" orientation="0 0 1 0" fixed="1">
+		<path>../models/cable_6segments.xml</path>
+	</tree>
+
+	<tree name="cable7" position="0.0 0.6 1.4" orientation="0 0 1 0" fixed="1">
+		<path>../models/cable_6segments.xml</path>
+	</tree>
+
+	<tree name="cable8" position="0.0 -0.2 0.3" orientation="1 0 0 0" fixed="0">
+		<path>../models/cable_2segments.xml</path>
+	</tree>
+
+	<tree name="cable9" position="0.0 -0.4 0.4" orientation="0.9659 0 0.2588 0" fixed="0">
+		<path>../models/cable_2segments.xml</path>
+	</tree>
+
+	<tree name="cable10" position="0.0 -0.6 0.5" orientation="0.9659 0 -0.2588 0" fixed="0">
+		<path>../models/cable_2segments.xml</path>
+	</tree>
 </world>
